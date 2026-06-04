@@ -1,10 +1,12 @@
-class AuthService {
-  login(username, password) {
-    console.log("Login:", username);
-  }
+import { users } from "../data/mockData";
 
-  register(user) {
-    console.log("Register:", user);
+class AuthService {
+  login(email, password) {
+    return users.find(
+      (user) =>
+        user.email === email &&
+        user.password === password
+    );
   }
 
   logout() {
@@ -13,3 +15,4 @@ class AuthService {
 }
 
 export default new AuthService();
+
