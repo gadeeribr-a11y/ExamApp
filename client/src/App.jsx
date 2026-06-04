@@ -1,7 +1,19 @@
 import { useState } from "react";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+
 
 function App() {
   const [rememberMe, setRememberMe] = useState(true);
+  const [page, setPage] = useState("login");
+
+  if (page === "register") {
+  return (
+    <RegisterPage
+      goToLogin={() => setPage("login")}
+    />
+  );
+}
 
   return (
      <div className="bg-dark min-vh-100 d-flex align-items-center justify-content-center">
@@ -60,6 +72,17 @@ function App() {
             <button type="submit" className="btn btn-primary btn-lg w-100">
               Log in
             </button>
+
+            <div className="text-center mt-3">
+            <button
+              type="button"
+              className="btn btn-link"
+              onClick={() => setPage("register")}
+            >
+              Sign Up
+            </button>
+          </div>
+          
           </form>
         </div>
       </section>
