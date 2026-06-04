@@ -1,0 +1,38 @@
+body {
+  margin: 0;
+  background: #eef2f6;
+}
+
+.login-page {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.login-shell {
+  width: min(100%, 420px);
+}
+
+.login-panel {
+  background: #ffffff;
+  border: 1px solid #d8dee7;
+  border-radius: 8px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.12);
+  padding: 32px;
+}
+
+.form-control,
+.btn {
+  border-radius: 8px;
+}
+
+@media (max-width: 480px) {
+  .login-page {
+    padding: 16px;
+  }
+
+  .login-panel {
+    padding: 24px;
+  }
+}
