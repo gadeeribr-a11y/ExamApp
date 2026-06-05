@@ -6,6 +6,8 @@ import TeacherDashboard from "./pages/TeacherDashboard";
 
 import CreateExamPage from "./pages/CreateExamPage";
 import EditExamPage from "./pages/EditExamPage";
+import StudentDashboard from "./pages/StudentDashboard";
+import ExamPage from "./pages/ExamPage";
 
 function App() {
   const [rememberMe, setRememberMe] = useState(true);
@@ -15,6 +17,7 @@ function App() {
 
   const [currentPage, setCurrentPage] = useState("dashboard");
   const [selectedExam, setSelectedExam] = useState(null);
+  const [studentExam, setStudentExam] = useState(null);
   const [exams, setExams] = useState(
   MockDBService.getExams()
   );
@@ -30,6 +33,36 @@ if (!role) {
   return (
     <RoleSelectionPage
       onSelectRole={setRole}
+    />
+  );
+}
+if (loggedIn && role === "student") {
+
+  if (studentExam) {
+    return (
+      <ExamPage
+        exam={studentExam}
+        onBack={() => setStudentExam(null)}
+      />
+    );
+  }
+
+  return (
+    <StudentDashboard
+      onJoinExam={(code) => {
+        const exam = exams.find(
+          (e) =>
+            e.examCode?.toUpperCase() ===
+            code.toUpperCase()
+        );
+
+        if (!exam) {
+          alert("Exam not found");
+          return;
+        }
+
+        setStudentExam(exam);
+      }}
     />
   );
 }
