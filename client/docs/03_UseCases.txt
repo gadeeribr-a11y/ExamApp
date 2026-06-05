@@ -1,0 +1,24 @@
+USE CASES
+
+Teacher Use Cases
+
+1. Login
+2. Create Exam
+3. Edit Exam
+4. Delete Exam
+5. Change Exam Status
+6. Generate Exam Code
+7. Add Open Question
+8. Add Multiple Choice Question
+9. Save Questions
+10. Logout
+
+
+Student Use Cases
+
+1. Login
+2. Enter Exam Code
+3. Join Exam
+4. View Questions
+5. Finish Exam
+6. Logout
