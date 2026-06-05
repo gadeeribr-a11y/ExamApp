@@ -1,0 +1,111 @@
+ExamApp - Project Description
+
+בפרויקט זה פיתחתי מערכת לניהול מבחנים מקוונת בשם ExamApp.
+
+המערכת מאפשרת עבודה עבור שני סוגי משתמשים:
+
+1. מרצה
+2. סטודנט
+
+פיצ'רים עיקריים:
+
+AUTH:
+
+* הרשמה למערכת
+* התחברות למערכת
+* בחירת סוג משתמש (מרצה / סטודנט)
+
+מרצה:
+
+* יצירת מבחן חדש
+* עריכת מבחן קיים
+* מחיקת מבחן
+* שינוי סטטוס מבחן
+* יצירת קוד מבחן
+* הוספת שאלות פתוחות
+* הוספת שאלות אמריקאיות
+* שמירת שאלות במבחן
+* צפייה ברשימת המבחנים
+
+סטודנט:
+
+* התחברות למערכת
+* הזנת קוד מבחן
+* הצטרפות למבחן
+* צפייה בשאלות המבחן
+* סיום מבחן
+* התנתקות מהמערכת
+
+עמודים במערכת:
+
+* LoginPage
+* RegisterPage
+* RoleSelectionPage
+* TeacherDashboard
+* CreateExamPage
+* EditExamPage
+* StudentDashboard
+* ExamPage
+
+Services:
+
+* AuthService
+* ConfigService
+* LoggerService
+* MockDBService
+* NotifyService
+* StorageService
+
+Use Cases:
+
+מרצה:
+
+* יצירת מבחן חדש
+* עריכת מבחן
+* הוספת שאלות למבחן
+* שינוי סטטוס מבחן
+* מחיקת מבחן
+* יצירת קוד מבחן
+
+סטודנט:
+
+* הזנת קוד מבחן
+* פתיחת מבחן
+* צפייה בשאלות
+* סיום מבחן
+
+ישויות עיקריות:
+
+User
+
+* id
+* email
+* password
+* role
+
+Exam
+
+* id
+* title
+* startDate
+* status
+* examCode
+* questions
+
+Question
+
+* id
+* text
+* type
+* answers
+* correctAnswer
+
+טכנולוגיות:
+
+* React
+* JavaScript
+* Bootstrap
+* Local Storage
+* Mock Database
+
+הפרויקט נבנה בצורה מודולרית תוך שימוש ב-Components, Services ו-Git Branches.

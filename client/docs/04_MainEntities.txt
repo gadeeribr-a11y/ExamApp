@@ -1,0 +1,41 @@
+MAIN ENTITIES
+
+User
+
+Attributes:
+- id
+- email
+- password
+- role
+
+Description:
+Represents a user in the system.
+A user can be a teacher or a student.
+
+
+Exam
+
+Attributes:
+- id
+- title
+- startDate
+- status
+- examCode
+- questions
+
+Description:
+Represents an exam created by a teacher.
+
+
+Question
+
+Attributes:
+- id
+- text
+- type
+- answers
+- correctAnswer
+
+Description:
+Represents a question belonging to an exam.
+The question can be open or multiple choice.
