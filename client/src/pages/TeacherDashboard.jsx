@@ -6,13 +6,19 @@ function TeacherDashboard({
   setExams,
   onCreateExam,
   onEditExam,
+  onLogout,
 }) {
 
 
   return (
     <div className="container mt-4">
       <h1>Teacher Dashboard</h1>
-      
+      <button
+      className="btn btn-outline-danger float-end"
+      onClick={onLogout}
+      >
+      Logout
+      </button>
       <button
         className="btn btn-primary mb-3"
         onClick={onCreateExam}
@@ -107,7 +113,7 @@ function TeacherDashboard({
                 >
                   Generate Code
                 </button>
-                
+
               </td>
             </tr>
           ))}

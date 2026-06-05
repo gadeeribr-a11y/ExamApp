@@ -1,12 +1,20 @@
 import { useState } from "react";
 
-function StudentDashboard({ onJoinExam }) {
+function StudentDashboard({
+  onJoinExam,
+  onLogout,
+}) {
   const [code, setCode] = useState("");
 
   return (
     <div className="container mt-5">
       <h1>Student Dashboard</h1>
-
+      <button
+        className="btn btn-outline-danger float-end"
+        onClick={onLogout}
+      >
+        Logout
+      </button>
       <input
         className="form-control mb-3"
         placeholder="Enter Exam Code"

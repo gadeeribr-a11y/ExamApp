@@ -63,6 +63,11 @@ if (loggedIn && role === "student") {
 
         setStudentExam(exam);
       }}
+      onLogout={() => {
+      setLoggedIn(false);
+      setRole("");
+      setStudentExam(null);
+      }}
     />
   );
 }
@@ -119,6 +124,11 @@ if (loggedIn && role === "teacher") {
         setSelectedExam(exam);
         setCurrentPage("edit");
       }}
+      onLogout={() => {
+    setLoggedIn(false);
+    setRole("");
+    setCurrentPage("dashboard");
+  }}
     />
   );
 }
