@@ -1,13 +1,24 @@
 import { useState } from "react";
-import LoginPage from "./pages/LoginPage";
+import MockDBService from "./services/MockDBService";
 import RegisterPage from "./pages/RegisterPage";
 import RoleSelectionPage from "./pages/RoleSelectionPage";
+import TeacherDashboard from "./pages/TeacherDashboard";
+
+import CreateExamPage from "./pages/CreateExamPage";
+import EditExamPage from "./pages/EditExamPage";
 
 function App() {
   const [rememberMe, setRememberMe] = useState(true);
   const [page, setPage] = useState("login");
   const [role, setRole] = useState("");
-  
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState("dashboard");
+  const [selectedExam, setSelectedExam] = useState(null);
+  const [exams, setExams] = useState(
+  MockDBService.getExams()
+  );
+
   if (page === "register") {
   return (
     <RegisterPage
@@ -22,6 +33,63 @@ if (!role) {
     />
   );
 }
+if (loggedIn && role === "teacher") {
+
+  if (currentPage === "create") {
+    return (
+      <CreateExamPage
+        onCancel={() => setCurrentPage("dashboard")}
+        onSave={(exam) => {
+        const newExam = {
+          ...exam,
+          id: Date.now(),
+        };
+
+        const updated = [...exams, newExam];
+
+        setExams(updated);
+        MockDBService.saveExams(updated);
+
+        setCurrentPage("dashboard");
+      }}
+      />
+    );
+  }
+
+  if (currentPage === "edit") {
+    return (
+      <EditExamPage
+      exam={selectedExam}
+      onSave={(updatedExam) => {
+        const updated = exams.map((e) =>
+          e.id === updatedExam.id
+            ? updatedExam
+            : e
+        );
+
+        setExams(updated);
+        MockDBService.saveExams(updated);
+
+        setCurrentPage("dashboard");
+      }}
+      onBack={() => setCurrentPage("dashboard")}
+    />
+    );
+  }
+
+  return (
+    <TeacherDashboard
+      exams={exams}
+      setExams={setExams}
+      onCreateExam={() => setCurrentPage("create")}
+      onEditExam={(exam) => {
+        setSelectedExam(exam);
+        setCurrentPage("edit");
+      }}
+    />
+  );
+}
+
   return (
      <div className="bg-dark min-vh-100 d-flex align-items-center justify-content-center">
     <main className="login-page">
@@ -38,7 +106,11 @@ if (!role) {
           <h1 className="h3 fw-bold mb-1">Sign in</h1>
           <p className="text-secondary mb-4">Access your exam dashboard.</p>
 
-          <form>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+            }}
+          >
             <div className="mb-3">
               <label htmlFor="email" className="form-label fw-semibold">
                 Email address
@@ -83,7 +155,11 @@ if (!role) {
               </a>
             </div>
 
-            <button type="submit" className="btn btn-primary btn-lg w-100">
+            <button
+              type="submit"
+              className="btn btn-primary btn-lg w-100"
+              onClick={() => setLoggedIn(true)}
+            >
               Log in
             </button>
 
