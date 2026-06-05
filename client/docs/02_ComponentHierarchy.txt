@@ -1,0 +1,44 @@
+COMPONENT HIERARCHY
+
+App
+│
+├── RoleSelectionPage
+│
+├── LoginPage
+│
+├── RegisterPage
+│
+├── TeacherDashboard
+│   │
+│   ├── CreateExamPage
+│   └── EditExamPage
+│
+├── StudentDashboard
+│   │
+│   └── ExamPage
+│
+└── NavigationMenu
+
+
+Component Responsibilities
+
+App
+- Main application component.
+- Controls navigation between pages.
+- Manages application state.
+
+TeacherDashboard
+- Displays all exams.
+- Allows exam management.
+
+CreateExamPage
+- Creates new exams.
+
+EditExamPage
+- Manages questions inside an exam.
+
+StudentDashboard
+- Allows joining an exam using exam code.
+
+ExamPage
+- Displays exam questions and allows submission.

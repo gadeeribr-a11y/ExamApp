@@ -17,6 +17,7 @@ export const exams = [
   {
     id: 1,
     title: "React Basics",
+    date: "2026-06-20",
     status: "Published",
   },
 ];
