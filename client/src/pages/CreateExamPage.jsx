@@ -48,6 +48,9 @@ function CreateExamPage({ onSave, onCancel }) {
             startDate,
             status,
             questions: [],
+            submitted: false,
+            submittedAnswers: [],
+            grade: null,
             })
         }
       >

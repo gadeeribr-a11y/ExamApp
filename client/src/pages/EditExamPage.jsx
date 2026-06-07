@@ -6,9 +6,10 @@ function EditExamPage({
   onBack,
 }) {
 
-  const [questions, setQuestions] = useState(
-    exam?.questions || []
-  );
+const [questions, setQuestions] =
+  useState(exam?.questions || []);
+
+
 const [questionText, setQuestionText] = useState("");
 const [questionType, setQuestionType] = useState("open");
 const [answerA, setAnswerA] = useState("");

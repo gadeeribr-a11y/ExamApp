@@ -6,6 +6,7 @@ function TeacherDashboard({
   setExams,
   onCreateExam,
   onEditExam,
+  onViewAnswers,
   onLogout,
 }) {
 
@@ -34,6 +35,8 @@ function TeacherDashboard({
             <th>Start Date</th>
             <th>Code</th>
             <th>Actions</th>
+            <th>Submitted</th>
+            <th>Grade</th>
           </tr>
         </thead>
 
@@ -44,7 +47,12 @@ function TeacherDashboard({
               <td>{exam.status}</td>
               <td>{exam.startDate}</td>
               <td><code>{exam.examCode}</code></td>
-
+              <th>Grade</th>
+              <td>
+              {exam.submitted
+                ? "Submitted"
+                : "Not Submitted"}
+              </td>
               <td>
                 <button
                   className="btn btn-warning btn-sm me-2"
@@ -114,6 +122,12 @@ function TeacherDashboard({
                   Generate Code
                 </button>
 
+                <button
+                  className="btn btn-success btn-sm ms-2"
+                  onClick={() => onViewAnswers(exam)}
+                >
+                  Answers / Grade
+                </button>
               </td>
             </tr>
           ))}
