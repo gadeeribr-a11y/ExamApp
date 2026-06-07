@@ -3,11 +3,11 @@ import MockDBService from "./services/MockDBService";
 import RegisterPage from "./pages/RegisterPage";
 import RoleSelectionPage from "./pages/RoleSelectionPage";
 import TeacherDashboard from "./pages/TeacherDashboard";
-
 import CreateExamPage from "./pages/CreateExamPage";
 import EditExamPage from "./pages/EditExamPage";
 import StudentDashboard from "./pages/StudentDashboard";
 import ExamPage from "./pages/ExamPage";
+import ViewAnswersPage from "./pages/ViewAnswersPage";
 
 function App() {
   const [rememberMe, setRememberMe] = useState(true);
@@ -21,6 +21,43 @@ function App() {
   const [exams, setExams] = useState(
   MockDBService.getExams()
   );
+
+
+  if (currentPage === "answers") {
+  return (
+    <ViewAnswersPage
+      exam={selectedExam}
+      onBack={() =>
+        setCurrentPage(
+          "dashboard"
+        )
+      }
+      onSaveGrade={(grade) => {
+
+        const updated =
+          exams.map((e) =>
+            e.id ===
+            selectedExam.id
+              ? {
+                  ...e,
+                  grade,
+                }
+              : e
+          );
+
+        setExams(updated);
+
+        MockDBService.saveExams(
+          updated
+        );
+
+        setCurrentPage(
+          "dashboard"
+        );
+      }}
+    />
+  );
+}
 
   if (page === "register") {
   return (
@@ -42,13 +79,26 @@ if (loggedIn && role === "student") {
     return (
       <ExamPage
         exam={studentExam}
-        onBack={() => setStudentExam(null)}
-      />
+        onSubmitExam={(updatedExam) => {
+
+        const updated = exams.map((e) =>
+          e.id === updatedExam.id
+            ? updatedExam
+            : e
+        );
+
+        setExams(updated);
+        MockDBService.saveExams(updated);
+
+        setStudentExam(null);
+      }}
+    />
     );
   }
 
   return (
     <StudentDashboard
+      exams={exams}
       onJoinExam={(code) => {
         const exam = exams.find(
           (e) =>
@@ -64,9 +114,9 @@ if (loggedIn && role === "student") {
         setStudentExam(exam);
       }}
       onLogout={() => {
-      setLoggedIn(false);
-      setRole("");
-      setStudentExam(null);
+        setLoggedIn(false);
+        setRole("");
+        setStudentExam(null);
       }}
     />
   );
@@ -123,6 +173,10 @@ if (loggedIn && role === "teacher") {
       onEditExam={(exam) => {
         setSelectedExam(exam);
         setCurrentPage("edit");
+      }}
+      onViewAnswers={(exam) => {
+        setSelectedExam(exam);
+        setCurrentPage("answers");
       }}
       onLogout={() => {
     setLoggedIn(false);
