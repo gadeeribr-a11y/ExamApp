@@ -149,17 +149,20 @@ if (loggedIn && role === "teacher") {
       <EditExamPage
       exam={selectedExam}
       onSave={(updatedExam) => {
-        const updated = exams.map((e) =>
-          e.id === updatedExam.id
-            ? updatedExam
-            : e
-        );
+      const updated = exams.map((e) =>
+        e.id === updatedExam.id ? updatedExam : e
+      );
 
-        setExams(updated);
-        MockDBService.saveExams(updated);
+      setExams(updated);
+      MockDBService.saveExams(updated);
 
-        setCurrentPage("dashboard");
-      }}
+      // ⭐ Keep selectedExam in sync
+      setSelectedExam(updatedExam);
+
+      setCurrentPage("dashboard");
+    }}
+
+
       onBack={() => setCurrentPage("dashboard")}
     />
     );

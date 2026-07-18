@@ -17,7 +17,8 @@ const [answerB, setAnswerB] = useState("");
 const [answerC, setAnswerC] = useState("");
 const [answerD, setAnswerD] = useState("");
 const [correctAnswer, setCorrectAnswer] = useState("A");
-
+const [editingQuestionId, setEditingQuestionId] = useState(null);
+  
   return (
     <div className="container mt-4">
       <h1>{exam?.title}</h1>
@@ -88,41 +89,46 @@ const [correctAnswer, setCorrectAnswer] = useState("A");
       <button
         className="btn btn-primary mb-3"
         onClick={() => {
-            if (!questionText) return;
+  if (!questionText.trim()) return;
 
-            setQuestions([
-            ...questions,
-            {
-            id: Date.now(),
-            text: questionText,
-            type: questionType,
+  const question = {
+    id: editingQuestionId ?? Date.now(),
+    text: questionText,
+    type: questionType,
+    answers:
+      questionType === "multiple"
+        ? [answerA, answerB, answerC, answerD]
+        : [],
+    correctAnswer:
+      questionType === "multiple"
+        ? correctAnswer
+        : null,
+  };
 
-            answers:
-                questionType === "multiple"
-                ? [
-                    answerA,
-                    answerB,
-                    answerC,
-                    answerD,
-                    ]
-                : [],
+  if (editingQuestionId) {
+    setQuestions(
+      questions.map((q) =>
+        q.id === editingQuestionId ? question : q
+      )
+    );
+  } else {
+    setQuestions([...questions, question]);
+  }
 
-            correctAnswer:
-                questionType === "multiple"
-                ? correctAnswer
-                : null,
-            },
-            ]);
+  setEditingQuestionId(null);
 
-            setQuestionText("");
-            setAnswerA("");
-            setAnswerB("");
-            setAnswerC("");
-            setAnswerD("");
-            setCorrectAnswer("A");
-        }}
+  setQuestionText("");
+  setQuestionType("open");
+  setAnswerA("");
+  setAnswerB("");
+  setAnswerC("");
+  setAnswerD("");
+  setCorrectAnswer("A");
+}}
+
+
         >
-        Add Question
+        {editingQuestionId ? "Update Question" : "Add Question"}
         </button>
 
       <ul className="list-group-item mb-3">
@@ -160,7 +166,55 @@ const [correctAnswer, setCorrectAnswer] = useState("A");
             <small>
                 {q.type}
             </small>
-              </div>
+
+
+
+            <div className="mt-3">
+  <button
+    className="btn btn-warning btn-sm me-2"
+    onClick={() => {
+      setEditingQuestionId(q.id);
+
+      setQuestionText(q.text);
+      setQuestionType(q.type);
+
+      if (q.type === "multiple") {
+        setAnswerA(q.answers[0]);
+        setAnswerB(q.answers[1]);
+        setAnswerC(q.answers[2]);
+        setAnswerD(q.answers[3]);
+        setCorrectAnswer(q.correctAnswer);
+      } else {
+        setAnswerA("");
+        setAnswerB("");
+        setAnswerC("");
+        setAnswerD("");
+      }
+
+      // Scroll to the edit form
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    }}
+  >
+    Edit
+  </button>
+
+  <button
+    className="btn btn-danger btn-sm"
+    onClick={() => {
+      if (window.confirm("Delete this question?")) {
+        setQuestions(
+          questions.filter((question) => question.id !== q.id)
+        );
+      }
+    }}
+  >
+    Delete
+  </button>
+</div>
+</div>
             </div>
         ))}
         </ul>
