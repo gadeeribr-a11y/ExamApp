@@ -98,21 +98,34 @@ if (loggedIn && role === "student") {
 
   return (
     <StudentDashboard
-      exams={exams}
+      exams={exams.filter(
+    (exam) => exam.status === "Published"
+    )}
       onJoinExam={(code) => {
-        const exam = exams.find(
-          (e) =>
-            e.examCode?.toUpperCase() ===
-            code.toUpperCase()
-        );
+    const exam = exams.find(
+      (e) =>
+        e.examCode?.toUpperCase() ===
+        code.toUpperCase()
+    );
+    console.log("Found exam:", exam);
+    if (!exam) {
 
-        if (!exam) {
-          alert("Exam not found");
-          return;
-        }
+      alert("Exam not found");
+      return;
+    }
 
-        setStudentExam(exam);
-      }}
+    if (exam.status === "Draft") {
+      alert("This exam is still a draft.");
+      return;
+    }
+
+    if (exam.status === "Closed") {
+      alert("This exam is closed.");
+      return;
+    }
+
+    setStudentExam(exam);
+  }}
       onLogout={() => {
         setLoggedIn(false);
         setRole("");
