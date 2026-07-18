@@ -29,40 +29,45 @@ function ViewAnswersPage({
 
       <hr />
 
-      <h4 className="mb-3">
-        Submitted Answers
-      </h4>
+      <h4 className="mb-3">Student Submissions</h4>
 
-      {exam?.submittedAnswers &&
-      Object.keys(exam.submittedAnswers)
-        .length > 0 ? (
-        Object.entries(
-          exam.submittedAnswers
-        ).map(([questionId, answer]) => (
-          <div
-            key={questionId}
-            className="card mb-3"
-          >
+      {exam?.submissions?.length > 0 ? (
+        exam.submissions.map((submission, index) => (
+          <div key={submission.id} className="card mb-4">
             <div className="card-body">
-              <h6>
-            {
-                exam.questions?.find(
-                (q) => String(q.id) === String(questionId)
-                )?.text || `Question ${questionId}`
-            }
-            </h6>
-              <p className="mb-0">
-                <strong>
-                  Student Answer:
-                </strong>{" "}
-                {answer}
-              </p>
+              <h5>Submission #{index + 1}</h5>
+
+              {Object.entries(submission.submittedAnswers).map(
+                ([questionId, answer]) => (
+                  <div key={questionId} className="mb-3">
+                    <strong>
+                      {exam.questions?.find(
+                        (q) =>
+                          String(q.id) ===
+                          String(questionId)
+                      )?.text}
+                    </strong>
+
+                    <p>{answer}</p>
+                  </div>
+                )
+              )}
+
+              <input
+                type="number"
+                className="form-control mt-3"
+                placeholder="Grade"
+                defaultValue={submission.grade ?? ""}
+                onBlur={(e) => {
+                  submission.grade = e.target.value;
+                }}
+              />
             </div>
           </div>
         ))
       ) : (
         <div className="alert alert-warning">
-          No submitted answers yet.
+          No submissions yet.
         </div>
       )}
 

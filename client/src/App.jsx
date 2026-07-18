@@ -27,33 +27,16 @@ function App() {
   return (
     <ViewAnswersPage
       exam={selectedExam}
-      onBack={() =>
-        setCurrentPage(
-          "dashboard"
-        )
-      }
-      onSaveGrade={(grade) => {
+      onBack={() => setCurrentPage("dashboard")}
+      onSaveGrade={(updatedExam) => {
 
-        const updated =
-          exams.map((e) =>
-            e.id ===
-            selectedExam.id
-              ? {
-                  ...e,
-                  grade,
-                }
-              : e
-          );
+        const updated = exams.map((e) =>
+          e.id === updatedExam.id ? updatedExam : e
+        );
 
         setExams(updated);
-
-        MockDBService.saveExams(
-          updated
-        );
-
-        setCurrentPage(
-          "dashboard"
-        );
+        MockDBService.saveExams(updated);
+        setCurrentPage("dashboard");
       }}
     />
   );

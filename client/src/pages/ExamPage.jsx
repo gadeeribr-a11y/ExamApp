@@ -74,8 +74,15 @@ function ExamPage({
             if (confirmed) {
             onSubmitExam({
             ...exam,
-            submitted: true,
-            submittedAnswers: answers,
+            submissions: [
+              ...(exam.submissions || []),
+              {
+                id: Date.now(),
+                submittedAnswers: answers,
+                submittedAt: new Date().toLocaleString(),
+                grade: null,
+              },
+            ],
           });
             onBack();
             }
