@@ -6,6 +6,7 @@ function CreateExamPage({ onSave, onCancel }) {
   const [title, setTitle] = useState("");
   const [startDate, setStartDate] = useState("");
   const [status, setStatus] = useState("Draft");
+  const [durationMinutes, setDurationMinutes] = useState(30);
 
   useEffect(() => {
     const draft = getDraft("create-exam");
@@ -14,12 +15,13 @@ function CreateExamPage({ onSave, onCancel }) {
       setTitle(draft.title || "");
       setStartDate(draft.startDate || "");
       setStatus(draft.status || "Draft");
+      setDurationMinutes(draft.durationMinutes || 30);
     }
   }, []);
 
   useEffect(() => {
-    saveDraft("create-exam", { title, startDate, status });
-  }, [title, startDate, status]);
+    saveDraft("create-exam", { title, startDate, status, durationMinutes });
+  }, [title, startDate, status, durationMinutes]);
 
   const handleSave = () => {
     if (!title.trim()) {
@@ -32,6 +34,7 @@ function CreateExamPage({ onSave, onCancel }) {
       examCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
       title,
       startDate,
+      durationMinutes: Number(durationMinutes),
       status,
       questions: [],
       submitted: false,
@@ -62,6 +65,16 @@ function CreateExamPage({ onSave, onCancel }) {
         className="form-control mb-3"
         value={startDate}
         onChange={(e) => setStartDate(e.target.value)}
+      />
+
+      <input
+        type="number"
+        min="1"
+        max="240"
+        className="form-control mb-3"
+        placeholder="Duration in minutes"
+        value={durationMinutes}
+        onChange={(e) => setDurationMinutes(e.target.value)}
       />
 
       <select

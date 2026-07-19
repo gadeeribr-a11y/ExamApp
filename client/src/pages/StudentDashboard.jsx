@@ -37,7 +37,6 @@ function StudentDashboard({
       <button className="btn btn-outline-primary ms-2" onClick={onViewResults}>
         My Results
       </button>
-      <hr className="my-4" />
     </div>
   );
 }

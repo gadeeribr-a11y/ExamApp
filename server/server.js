@@ -39,6 +39,7 @@ function mapExamRow(row) {
     title: row.title,
     status: row.status,
     startDate: row.startDate || "",
+    durationMinutes: Number(row.durationMinutes) || 30,
     examCode: row.examCode,
     ownerId: row.ownerId ?? null,
     questions: parseJson(row.questions, []),
@@ -138,6 +139,7 @@ function initializeDatabase() {
             title TEXT NOT NULL,
             status TEXT NOT NULL DEFAULT 'Draft',
             startDate TEXT NOT NULL DEFAULT '',
+            durationMinutes INTEGER NOT NULL DEFAULT 30,
             examCode TEXT,
             questions TEXT NOT NULL DEFAULT '[]',
             submitted INTEGER NOT NULL DEFAULT 0,
@@ -174,6 +176,9 @@ function initializeDatabase() {
           }
           if (!columns.some((column) => column.name === "startDate")) {
             migrations.push("ALTER TABLE exams ADD COLUMN startDate TEXT NOT NULL DEFAULT ''");
+          }
+          if (!columns.some((column) => column.name === "durationMinutes")) {
+            migrations.push("ALTER TABLE exams ADD COLUMN durationMinutes INTEGER NOT NULL DEFAULT 30");
           }
 
           Promise.all(migrations.map((query) => runStatement(db, query)))
@@ -356,9 +361,8 @@ app.get("/api/exams", authenticateToken, async (req, res) => {
     }
 
     const availableExams = rows
-      .map(mapExamRow)
-      .filter((exam) => !exam.submissions.some((submission) => submission.studentId === req.user.id))
-      .map((exam) => mapExamForStudent(exam));
+      .filter((row) => !mapExamRow(row).submissions.some((submission) => submission.studentId === req.user.id))
+      .map(mapExamForStudent);
     res.json(availableExams);
   } catch (error) {
     console.error("Failed to fetch exams:", error.message);
@@ -407,6 +411,7 @@ app.post("/api/exams", authenticateToken, requireTeacher, async (req, res) => {
       title: exam.title || "Untitled",
       status: exam.status || "Draft",
       startDate: exam.startDate || "",
+      durationMinutes: Number(exam.durationMinutes) || 30,
       examCode: exam.examCode || null,
       ownerId: req.user.id,
       questions: exam.questions || [],
@@ -418,14 +423,15 @@ app.post("/api/exams", authenticateToken, requireTeacher, async (req, res) => {
     await runStatement(
       db,
       `
-        INSERT INTO exams (id, title, status, startDate, examCode, questions, submitted, submittedAnswers, grade, ownerId, submissions)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO exams (id, title, status, startDate, durationMinutes, examCode, questions, submitted, submittedAnswers, grade, ownerId, submissions)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         newExam.id,
         newExam.title,
         newExam.status,
         newExam.startDate,
+        newExam.durationMinutes,
         newExam.examCode,
         JSON.stringify(newExam.questions),
         newExam.submitted ? 1 : 0,
@@ -467,6 +473,7 @@ app.put("/api/exams/:id", authenticateToken, requireTeacher, async (req, res) =>
       id,
       ownerId: req.user.id,
       startDate: updates.startDate ?? currentExam.startDate,
+      durationMinutes: updates.durationMinutes ?? currentExam.durationMinutes,
       questions: updates.questions || currentExam.questions,
       submittedAnswers: updates.submittedAnswers || currentExam.submittedAnswers,
       submissions: Array.isArray(updates.submissions) ? updates.submissions : currentExam.submissions,
@@ -477,13 +484,14 @@ app.put("/api/exams/:id", authenticateToken, requireTeacher, async (req, res) =>
       db,
       `
         UPDATE exams
-        SET title = ?, status = ?, startDate = ?, examCode = ?, questions = ?, submitted = ?, submittedAnswers = ?, grade = ?, ownerId = ?, submissions = ?
+        SET title = ?, status = ?, startDate = ?, durationMinutes = ?, examCode = ?, questions = ?, submitted = ?, submittedAnswers = ?, grade = ?, ownerId = ?, submissions = ?
         WHERE id = ?
       `,
       [
         updatedExam.title,
         updatedExam.status,
         updatedExam.startDate,
+        updatedExam.durationMinutes,
         updatedExam.examCode,
         JSON.stringify(updatedExam.questions),
         updatedExam.submitted ? 1 : 0,

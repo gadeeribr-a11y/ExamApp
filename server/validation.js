@@ -30,6 +30,10 @@ function validateExam(exam) {
     return "Questions must be a list";
   }
 
+  if (exam.durationMinutes !== undefined && (!Number.isInteger(Number(exam.durationMinutes)) || Number(exam.durationMinutes) < 1 || Number(exam.durationMinutes) > 240)) {
+    return "Duration must be between 1 and 240 minutes";
+  }
+
   return null;
 }
 

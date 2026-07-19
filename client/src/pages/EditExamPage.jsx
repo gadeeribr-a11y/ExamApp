@@ -13,6 +13,7 @@ function EditExamPage({ exam, onSave, onBack }) {
   const [correctAnswer, setCorrectAnswer] = useState("A");
   const [editingQuestionId, setEditingQuestionId] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [durationMinutes, setDurationMinutes] = useState(exam?.durationMinutes || 30);
 
   const draftKey = `edit-exam-${exam?.id ?? "new"}`;
 
@@ -29,6 +30,7 @@ function EditExamPage({ exam, onSave, onBack }) {
       setAnswerD(draft.answerD || "");
       setCorrectAnswer(draft.correctAnswer || "A");
       setEditingQuestionId(draft.editingQuestionId || null);
+      setDurationMinutes(draft.durationMinutes || exam?.durationMinutes || 30);
     } else {
       setQuestions(exam?.questions || []);
       setQuestionText("");
@@ -39,6 +41,7 @@ function EditExamPage({ exam, onSave, onBack }) {
       setAnswerD("");
       setCorrectAnswer("A");
       setEditingQuestionId(null);
+      setDurationMinutes(exam?.durationMinutes || 30);
     }
   }, [draftKey, exam?.id]);
 
@@ -53,8 +56,9 @@ function EditExamPage({ exam, onSave, onBack }) {
       answerD,
       correctAnswer,
       editingQuestionId,
+      durationMinutes,
     });
-  }, [draftKey, questions, questionText, questionType, answerA, answerB, answerC, answerD, correctAnswer, editingQuestionId]);
+  }, [draftKey, questions, questionText, questionType, answerA, answerB, answerC, answerD, correctAnswer, editingQuestionId, durationMinutes]);
 
   const handleSaveQuestion = () => {
     if (!questionText.trim()) {
@@ -93,7 +97,7 @@ function EditExamPage({ exam, onSave, onBack }) {
     setIsSaving(true);
 
     try {
-      const saved = await onSave({ ...exam, questions });
+      const saved = await onSave({ ...exam, questions, durationMinutes: Number(durationMinutes) });
       if (saved) {
         clearDraft(draftKey);
       }
@@ -106,6 +110,16 @@ function EditExamPage({ exam, onSave, onBack }) {
     <div className="container mt-4">
       <h1>{exam?.title}</h1>
       <p className="text-muted">Changes are auto-saved locally so the draft is preserved.</p>
+
+      <input
+        type="number"
+        min="1"
+        max="240"
+        className="form-control mb-3"
+        value={durationMinutes}
+        onChange={(e) => setDurationMinutes(e.target.value)}
+        aria-label="Exam duration in minutes"
+      />
 
       <div className="mb-3">
         <input
