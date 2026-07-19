@@ -3,12 +3,15 @@ const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 const sqlite3 = require("sqlite3").verbose();
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const DATA_DIR = path.join(__dirname, "data");
 const DB_FILE = path.join(DATA_DIR, "exams.db");
 const JSON_DATA_FILE = path.join(DATA_DIR, "exams.json");
+const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
 
 const seedExams = [
   {
@@ -58,11 +61,68 @@ function mapExamRow(row) {
     title: row.title,
     status: row.status,
     examCode: row.examCode,
+    ownerId: row.ownerId ?? null,
     questions: parseJson(row.questions, []),
     submitted: Boolean(row.submitted),
     submittedAnswers: parseJson(row.submittedAnswers, []),
     grade: row.grade === null ? null : row.grade,
   };
+}
+
+function mapUserRow(row) {
+  return {
+    id: row.id,
+    email: row.email,
+    role: row.role,
+    createdAt: row.createdAt,
+  };
+}
+
+function createToken(user) {
+  return jwt.sign(
+    { id: user.id, email: user.email, role: user.role },
+    JWT_SECRET,
+    { expiresIn: "2h" }
+  );
+}
+
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  jwt.verify(token, JWT_SECRET, async (error, payload) => {
+    if (error) {
+      return res.status(401).json({ message: "Invalid or expired token" });
+    }
+
+    try {
+      const db = await dbPromise;
+      const rows = await runQuery(db, "SELECT * FROM users WHERE id = ?", [payload.id]);
+
+      if (rows.length === 0) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      req.user = mapUserRow(rows[0]);
+      next();
+    } catch (dbError) {
+      console.error("Authentication failed:", dbError.message);
+      return res.status(500).json({ message: "Authentication failed" });
+    }
+  });
+}
+
+function requireTeacher(req, res, next) {
+  if (!req.user || req.user.role !== "teacher") {
+    return res.status(403).json({ message: "Teacher access required" });
+  }
+
+  next();
 }
 
 function initializeDatabase() {
@@ -89,52 +149,122 @@ function initializeDatabase() {
           )
         `);
 
-        db.get("SELECT COUNT(*) AS count FROM exams", (countError, row) => {
-          if (countError) {
-            reject(countError);
+        db.run(`
+          CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY,
+            email TEXT UNIQUE NOT NULL,
+            passwordHash TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'student',
+            createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+
+        db.all("PRAGMA table_info(exams)", (pragmaError, columns) => {
+          if (pragmaError) {
+            reject(pragmaError);
             return;
           }
 
-          if (row.count === 0) {
-            let initialExams = seedExams;
+          const hasOwnerId = columns.some((column) => column.name === "ownerId");
 
-            if (fs.existsSync(JSON_DATA_FILE)) {
-              try {
-                const raw = fs.readFileSync(JSON_DATA_FILE, "utf8");
-                const parsed = JSON.parse(raw);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                  initialExams = parsed;
-                }
-              } catch (error) {
-                console.error("Failed to read existing exams data file:", error.message);
+          if (!hasOwnerId) {
+            db.run("ALTER TABLE exams ADD COLUMN ownerId INTEGER", (alterError) => {
+              if (alterError && !/duplicate column name/.test(alterError.message)) {
+                reject(alterError);
+                return;
               }
-            }
 
-            const stmt = db.prepare(`
-              INSERT INTO exams (id, title, status, examCode, questions, submitted, submittedAnswers, grade)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            `);
-
-            initialExams.forEach((exam) => {
-              stmt.run(
-                exam.id,
-                exam.title || "Untitled",
-                exam.status || "Draft",
-                exam.examCode || null,
-                JSON.stringify(exam.questions || []),
-                exam.submitted ? 1 : 0,
-                JSON.stringify(exam.submittedAnswers || []),
-                exam.grade ?? null
-              );
+              seedDatabase(db).then(() => resolve(db)).catch(reject);
             });
-
-            stmt.finalize(() => resolve(db));
             return;
           }
 
-          resolve(db);
+          seedDatabase(db).then(() => resolve(db)).catch(reject);
         });
       });
+    });
+  });
+}
+
+function seedDatabase(db) {
+  return new Promise((resolve, reject) => {
+    db.get("SELECT COUNT(*) AS count FROM users", (countError, userRow) => {
+      if (countError) {
+        reject(countError);
+        return;
+      }
+
+      if (userRow.count === 0) {
+        const defaultPasswordHash = bcrypt.hashSync("teacher123", 10);
+        db.run(
+          "INSERT INTO users (email, passwordHash, role) VALUES (?, ?, ?)",
+          ["teacher@example.com", defaultPasswordHash, "teacher"],
+          (insertError) => {
+            if (insertError) {
+              reject(insertError);
+              return;
+            }
+
+            continueSeeding(db).then(resolve).catch(reject);
+          }
+        );
+        return;
+      }
+
+      continueSeeding(db).then(resolve).catch(reject);
+    });
+  });
+}
+
+function continueSeeding(db) {
+  return new Promise((resolve, reject) => {
+    db.get("SELECT COUNT(*) AS count FROM exams", (countError, examRow) => {
+      if (countError) {
+        reject(countError);
+        return;
+      }
+
+      if (examRow.count === 0) {
+        let initialExams = seedExams;
+
+        if (fs.existsSync(JSON_DATA_FILE)) {
+          try {
+            const raw = fs.readFileSync(JSON_DATA_FILE, "utf8");
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              initialExams = parsed;
+            }
+          } catch (error) {
+            console.error("Failed to read existing exams data file:", error.message);
+          }
+        }
+
+        const stmt = db.prepare(`
+          INSERT INTO exams (id, title, status, examCode, questions, submitted, submittedAnswers, grade, ownerId)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        initialExams.forEach((exam) => {
+          stmt.run(
+            exam.id,
+            exam.title || "Untitled",
+            exam.status || "Draft",
+            exam.examCode || null,
+            JSON.stringify(exam.questions || []),
+            exam.submitted ? 1 : 0,
+            JSON.stringify(exam.submittedAnswers || []),
+            exam.grade ?? null,
+            1
+          );
+        });
+
+        stmt.finalize(() => {
+          db.run("UPDATE exams SET ownerId = 1 WHERE ownerId IS NULL", () => resolve());
+        });
+        return;
+      }
+
+      db.run("UPDATE exams SET ownerId = 1 WHERE ownerId IS NULL", () => resolve());
     });
   });
 }
@@ -175,10 +305,82 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-app.get("/api/exams", async (req, res) => {
+app.post("/api/auth/register", async (req, res) => {
   try {
     const db = await dbPromise;
-    const rows = await runQuery(db, "SELECT * FROM exams ORDER BY id");
+    const { email, password, role } = req.body || {};
+
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
+    }
+
+    const normalizedRole = role === "teacher" ? "teacher" : "student";
+    const existingRows = await runQuery(db, "SELECT id FROM users WHERE email = ?", [email.toLowerCase()]);
+
+    if (existingRows.length > 0) {
+      return res.status(409).json({ message: "Email already registered" });
+    }
+
+    const passwordHash = bcrypt.hashSync(password, 10);
+    const result = await runStatement(
+      db,
+      "INSERT INTO users (email, passwordHash, role) VALUES (?, ?, ?)",
+      [email.toLowerCase(), passwordHash, normalizedRole]
+    );
+
+    const userRows = await runQuery(db, "SELECT * FROM users WHERE id = ?", [result.lastID]);
+    const user = mapUserRow(userRows[0]);
+
+    res.status(201).json({
+      user,
+      token: createToken(user),
+    });
+  } catch (error) {
+    console.error("Register failed:", error.message);
+    res.status(500).json({ message: "Registration failed" });
+  }
+});
+
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const db = await dbPromise;
+    const { email, password } = req.body || {};
+
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
+    }
+
+    const rows = await runQuery(db, "SELECT * FROM users WHERE email = ?", [email.toLowerCase()]);
+    if (rows.length === 0) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    const userRow = rows[0];
+    const isValid = bcrypt.compareSync(password, userRow.passwordHash);
+    if (!isValid) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    const user = mapUserRow(userRow);
+    res.json({ user, token: createToken(user) });
+  } catch (error) {
+    console.error("Login failed:", error.message);
+    res.status(500).json({ message: "Login failed" });
+  }
+});
+
+app.get("/api/auth/me", authenticateToken, async (req, res) => {
+  res.json({ user: req.user });
+});
+
+app.get("/api/exams", authenticateToken, async (req, res) => {
+  try {
+    const db = await dbPromise;
+    const query = req.user.role === "teacher"
+      ? "SELECT * FROM exams ORDER BY id"
+      : "SELECT * FROM exams WHERE status = 'Published' ORDER BY id";
+
+    const rows = await runQuery(db, query);
     res.json(rows.map(mapExamRow));
   } catch (error) {
     console.error("Failed to fetch exams:", error.message);
@@ -186,7 +388,7 @@ app.get("/api/exams", async (req, res) => {
   }
 });
 
-app.post("/api/exams", async (req, res) => {
+app.post("/api/exams", authenticateToken, requireTeacher, async (req, res) => {
   try {
     const db = await dbPromise;
     const exam = req.body || {};
@@ -195,6 +397,7 @@ app.post("/api/exams", async (req, res) => {
       title: exam.title || "Untitled",
       status: exam.status || "Draft",
       examCode: exam.examCode || null,
+      ownerId: req.user.id,
       questions: exam.questions || [],
       submitted: Boolean(exam.submitted),
       submittedAnswers: exam.submittedAnswers || [],
@@ -204,8 +407,8 @@ app.post("/api/exams", async (req, res) => {
     await runStatement(
       db,
       `
-        INSERT INTO exams (id, title, status, examCode, questions, submitted, submittedAnswers, grade)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO exams (id, title, status, examCode, questions, submitted, submittedAnswers, grade, ownerId)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         newExam.id,
@@ -216,6 +419,7 @@ app.post("/api/exams", async (req, res) => {
         newExam.submitted ? 1 : 0,
         JSON.stringify(newExam.submittedAnswers),
         newExam.grade,
+        newExam.ownerId,
       ]
     );
 
@@ -226,7 +430,7 @@ app.post("/api/exams", async (req, res) => {
   }
 });
 
-app.put("/api/exams/:id", async (req, res) => {
+app.put("/api/exams/:id", authenticateToken, requireTeacher, async (req, res) => {
   try {
     const db = await dbPromise;
     const id = Number(req.params.id);
@@ -237,12 +441,16 @@ app.put("/api/exams/:id", async (req, res) => {
     }
 
     const currentExam = mapExamRow(currentRows[0]);
-    const updates = req.body || {};
+    if (currentExam.ownerId !== null && currentExam.ownerId !== req.user.id) {
+      return res.status(403).json({ message: "You can only update your own exams" });
+    }
 
+    const updates = req.body || {};
     const updatedExam = {
       ...currentExam,
       ...updates,
       id,
+      ownerId: req.user.id,
       questions: updates.questions || currentExam.questions,
       submittedAnswers: updates.submittedAnswers || currentExam.submittedAnswers,
       submitted: updates.submitted !== undefined ? Boolean(updates.submitted) : currentExam.submitted,
@@ -252,7 +460,7 @@ app.put("/api/exams/:id", async (req, res) => {
       db,
       `
         UPDATE exams
-        SET title = ?, status = ?, examCode = ?, questions = ?, submitted = ?, submittedAnswers = ?, grade = ?
+        SET title = ?, status = ?, examCode = ?, questions = ?, submitted = ?, submittedAnswers = ?, grade = ?, ownerId = ?
         WHERE id = ?
       `,
       [
@@ -263,6 +471,7 @@ app.put("/api/exams/:id", async (req, res) => {
         updatedExam.submitted ? 1 : 0,
         JSON.stringify(updatedExam.submittedAnswers),
         updatedExam.grade,
+        updatedExam.ownerId,
         id,
       ]
     );
@@ -270,14 +479,25 @@ app.put("/api/exams/:id", async (req, res) => {
     res.json(updatedExam);
   } catch (error) {
     console.error("Failed to update exam:", error.message);
-    res.status(500).json({ message: "Failed to delete exam" });
+    res.status(500).json({ message: "Failed to update exam" });
   }
 });
 
-app.delete("/api/exams/:id", async (req, res) => {
+app.delete("/api/exams/:id", authenticateToken, requireTeacher, async (req, res) => {
   try {
     const db = await dbPromise;
     const id = Number(req.params.id);
+    const currentRows = await runQuery(db, "SELECT * FROM exams WHERE id = ?", [id]);
+
+    if (currentRows.length === 0) {
+      return res.status(404).json({ message: "Exam not found" });
+    }
+
+    const currentExam = mapExamRow(currentRows[0]);
+    if (currentExam.ownerId !== null && currentExam.ownerId !== req.user.id) {
+      return res.status(403).json({ message: "You can only delete your own exams" });
+    }
+
     const result = await runStatement(db, "DELETE FROM exams WHERE id = ?", [id]);
 
     if (result.changes === 0) {
