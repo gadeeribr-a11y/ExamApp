@@ -129,13 +129,16 @@ function initializeDatabase() {
   return new Promise((resolve, reject) => {
     ensureDataDir();
 
-    const db = new sqlite3.Database(DB_FILE, (error) => {
+    const db = new sqlite3.Database(DB_FILE, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (error) => {
       if (error) {
         reject(error);
         return;
       }
 
       db.serialize(() => {
+        db.run("PRAGMA journal_mode = WAL");
+        db.run("PRAGMA synchronous = NORMAL");
+        db.run("PRAGMA busy_timeout = 5000");
         db.run(`
           CREATE TABLE IF NOT EXISTS exams (
             id INTEGER PRIMARY KEY,
