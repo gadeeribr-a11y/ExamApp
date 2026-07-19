@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import ApiService from "./services/ApiService";
 import NotificationService from "./services/NotificationService";
 import RegisterPage from "./pages/RegisterPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import CreateExamPage from "./pages/CreateExamPage";
 import EditExamPage from "./pages/EditExamPage";
@@ -155,6 +156,10 @@ function App() {
   }
 
   const renderPage = () => {
+    if (page === "forgot-password") {
+      return <ForgotPasswordPage onBack={() => setPage("login")} onSubmit={(email) => ApiService.requestPasswordReset(email)} />;
+    }
+
     if (currentPage === "submissions") {
       return <SubmissionListPage exams={safeExams} onBack={() => setCurrentPage("dashboard")} onViewAnswers={(exam) => {
         setSelectedExam(exam);
@@ -228,9 +233,9 @@ function App() {
                         Remember me
                       </label>
                     </div>
-                    <a href="#forgot-password" className="link-primary text-decoration-none">
+                    <button type="button" className="btn btn-link p-0 link-primary text-decoration-none" onClick={() => setPage("forgot-password")}>
                       Forgot password?
-                    </a>
+                    </button>
                   </div>
 
                   <button type="submit" className="btn btn-primary btn-lg w-100">

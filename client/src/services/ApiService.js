@@ -76,6 +76,13 @@ const ApiService = {
     return request(API_URL);
   },
 
+  async requestPasswordReset(email) {
+    return request(`${API_BASE_URL}/auth/forgot-password`, {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  },
+
   async getMySubmissions() {
     return request(`${API_BASE_URL}/student/submissions`);
   },

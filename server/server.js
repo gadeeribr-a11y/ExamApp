@@ -5,6 +5,7 @@ const path = require("path");
 const sqlite3 = require("sqlite3").verbose();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
 const { validateExam, validateRegistration } = require("./validation");
 
 const app = express();
@@ -13,9 +14,23 @@ const DATA_DIR = path.join(__dirname, "data");
 const DB_FILE = path.join(DATA_DIR, "exams.db");
 const CLIENT_BUILD_PATH = path.join(__dirname, "..", "client", "dist");
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
+const APP_URL = process.env.APP_URL || `http://127.0.0.1:${PORT}`;
 
 app.use(cors());
 app.use(express.json());
+
+function getMailTransport() {
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    return null;
+  }
+
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT) || 587,
+    secure: process.env.SMTP_SECURE === "true",
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+  });
+}
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) {
@@ -341,6 +356,36 @@ app.post("/api/auth/login", async (req, res) => {
   } catch (error) {
     console.error("Login failed:", error.message);
     res.status(500).json({ message: "Login failed" });
+  }
+});
+
+app.post("/api/auth/forgot-password", async (req, res) => {
+  try {
+    const email = req.body?.email?.trim().toLowerCase();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: "Please provide a valid email address" });
+    }
+
+    const db = await dbPromise;
+    const rows = await runQuery(db, "SELECT * FROM users WHERE email = ?", [email]);
+    const transport = getMailTransport();
+
+    if (rows.length > 0 && transport) {
+      const user = mapUserRow(rows[0]);
+      const token = jwt.sign({ id: user.id, purpose: "password-reset" }, JWT_SECRET, { expiresIn: "30m" });
+      const resetUrl = `${APP_URL}/reset-password?token=${encodeURIComponent(token)}`;
+      await transport.sendMail({
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to: user.email,
+        subject: "Reset your ExamApp password",
+        text: `Use this link to reset your password. It expires in 30 minutes: ${resetUrl}`,
+      });
+    }
+
+    res.json({ message: "Password reset email has been sent." });
+  } catch (error) {
+    console.error("Password reset request failed:", error.message);
+    res.status(500).json({ message: "Unable to send the password reset email right now" });
   }
 });
 
