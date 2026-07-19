@@ -23,13 +23,18 @@ function App() {
 
 
   useEffect(() => {
-  loadExams();
-}, []);
+    loadExams();
+  }, []);
 
-async function loadExams() {
-  const data = await ApiService.getExams();
-  setExams(data);
-}
+  async function loadExams() {
+    try {
+      const data = await ApiService.getExams();
+      setExams(data);
+    } catch (error) {
+      console.error("Failed to load exams from API", error);
+      setExams(MockDBService.getExams());
+    }
+  }
 
   if (currentPage === "answers") {
   return (

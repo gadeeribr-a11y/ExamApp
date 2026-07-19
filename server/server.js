@@ -11,6 +11,7 @@ const PORT = process.env.PORT || 5000;
 const DATA_DIR = path.join(__dirname, "data");
 const DB_FILE = path.join(DATA_DIR, "exams.db");
 const JSON_DATA_FILE = path.join(DATA_DIR, "exams.json");
+const CLIENT_BUILD_PATH = path.join(__dirname, "..", "client", "dist");
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
 
 const seedExams = [
@@ -301,6 +302,10 @@ function runStatement(db, query, params = []) {
 }
 
 app.get("/", (req, res) => {
+  if (fs.existsSync(CLIENT_BUILD_PATH)) {
+    return res.sendFile(path.join(CLIENT_BUILD_PATH, "index.html"));
+  }
+
   res.send("Exam API is running");
 });
 
@@ -512,6 +517,22 @@ app.delete("/api/exams/:id", authenticateToken, requireTeacher, async (req, res)
     console.error("Failed to delete exam:", error.message);
     res.status(500).json({ message: "Failed to delete exam" });
   }
+});
+
+if (fs.existsSync(CLIENT_BUILD_PATH)) {
+  app.use(express.static(CLIENT_BUILD_PATH));
+}
+
+app.use((req, res) => {
+  if (req.path.startsWith("/api")) {
+    return res.status(404).json({ message: "API endpoint not found" });
+  }
+
+  if (fs.existsSync(CLIENT_BUILD_PATH)) {
+    return res.sendFile(path.join(CLIENT_BUILD_PATH, "index.html"));
+  }
+
+  res.status(404).send("Frontend build not found. Run npm run build in the client folder.");
 });
 
 app.listen(PORT, () => {
