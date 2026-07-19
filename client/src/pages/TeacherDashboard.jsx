@@ -7,6 +7,14 @@ function TeacherDashboard({ exams, setExams, onCreateExam, onEditExam, onViewAns
   const draftCount = exams.filter((exam) => exam.status === "Draft").length;
   const closedCount = exams.filter((exam) => exam.status === "Closed").length;
   const submittedCount = exams.reduce((count, exam) => count + (exam.submissions?.length || 0), 0);
+  const gradedSubmissions = exams.flatMap((exam) =>
+    (exam.submissions || []).filter((submission) =>
+      submission.grade !== null && submission.grade !== undefined && submission.grade !== "" && !Number.isNaN(Number(submission.grade))
+    )
+  );
+  const submissionAverageGrade = gradedSubmissions.length
+    ? (gradedSubmissions.reduce((sum, submission) => sum + Number(submission.grade), 0) / gradedSubmissions.length).toFixed(1)
+    : "—";
   const averageGrade = exams.filter((exam) => exam.grade !== null && exam.grade !== undefined && exam.grade !== "").length
     ? (
         exams.reduce((sum, exam) => sum + Number(exam.grade || 0), 0) /
@@ -68,9 +76,9 @@ function TeacherDashboard({ exams, setExams, onCreateExam, onEditExam, onViewAns
         <div className="card-body d-flex justify-content-between flex-wrap align-items-center">
           <div>
             <h5 className="mb-1">Performance snapshot</h5>
-            <p className="text-muted mb-0">Average grade is shown for exams that already have a score.</p>
+            <p className="text-muted mb-0">Average across {gradedSubmissions.length} graded student submission{gradedSubmissions.length === 1 ? "" : "s"}.</p>
           </div>
-          <div className="display-6 fw-bold">{averageGrade}</div>
+          <div className="display-6 fw-bold">{submissionAverageGrade}</div>
         </div>
       </div>
 
