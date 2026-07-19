@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import ApiService from "./services/ApiService";
 import MockDBService from "./services/MockDBService";
 import RegisterPage from "./pages/RegisterPage";
 import RoleSelectionPage from "./pages/RoleSelectionPage";
@@ -18,10 +19,17 @@ function App() {
   const [currentPage, setCurrentPage] = useState("dashboard");
   const [selectedExam, setSelectedExam] = useState(null);
   const [studentExam, setStudentExam] = useState(null);
-  const [exams, setExams] = useState(
-  MockDBService.getExams()
-  );
+  const [exams, setExams] = useState([]);
 
+
+  useEffect(() => {
+  loadExams();
+}, []);
+
+async function loadExams() {
+  const data = await ApiService.getExams();
+  setExams(data);
+}
 
   if (currentPage === "answers") {
   return (

@@ -35,15 +35,13 @@ function CreateExamPage({ onSave, onCancel }) {
 
       <button
         className="btn btn-success me-2"
-        onClick={() =>
-          onSave({
+        onClick={() => {
+          const newExam = {
             id: Date.now(),
-
             examCode: Math.random()
-                .toString(36)
-                .substring(2, 8)
-                .toUpperCase(),
-
+              .toString(36)
+              .substring(2, 8)
+              .toUpperCase(),
             title,
             startDate,
             status,
@@ -51,8 +49,11 @@ function CreateExamPage({ onSave, onCancel }) {
             submitted: false,
             submittedAnswers: [],
             grade: null,
-            })
-        }
+          };
+
+          onSave?.(newExam);
+          onCancel?.();
+        }}
       >
         Save
       </button>
