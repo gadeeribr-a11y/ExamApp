@@ -1,7 +1,6 @@
-import MockDBService from "../services/MockDBService";
 import NotificationService from "../services/NotificationService";
 
-function TeacherDashboard({ exams, setExams, onCreateExam, onEditExam, onViewAnswers, onLogout }) {
+function TeacherDashboard({ exams, setExams, onCreateExam, onEditExam, onViewAnswers, onLogout, onDeleteExam, onUpdateExam }) {
   const totalExams = exams.length;
   const publishedCount = exams.filter((exam) => exam.status === "Published").length;
   const draftCount = exams.filter((exam) => exam.status === "Draft").length;
@@ -17,7 +16,7 @@ function TeacherDashboard({ exams, setExams, onCreateExam, onEditExam, onViewAns
   const updateExams = (updater) => {
     const updated = updater(exams);
     setExams(updated);
-    MockDBService.saveExams(updated);
+    return updated;
   };
 
   return (
@@ -103,8 +102,7 @@ function TeacherDashboard({ exams, setExams, onCreateExam, onEditExam, onViewAns
                     <button
                       className="btn btn-warning btn-sm"
                       onClick={() => {
-                        const latestExam = MockDBService.getExams().find((e) => e.id === exam.id);
-                        onEditExam(latestExam);
+                        onEditExam(exam);
                       }}
                     >
                       Edit
@@ -114,8 +112,7 @@ function TeacherDashboard({ exams, setExams, onCreateExam, onEditExam, onViewAns
                       className="btn btn-danger btn-sm"
                       onClick={() => {
                         if (window.confirm(`Delete ${exam.title}?`)) {
-                          updateExams((current) => current.filter((e) => e.id !== exam.id));
-                          NotificationService.notify("Exam deleted.", "success");
+                          onDeleteExam?.(exam.id);
                         }
                       }}
                     >
@@ -125,17 +122,11 @@ function TeacherDashboard({ exams, setExams, onCreateExam, onEditExam, onViewAns
                     <button
                       className="btn btn-secondary btn-sm"
                       onClick={() => {
-                        updateExams((current) =>
-                          current.map((e) =>
-                            e.id === exam.id
-                              ? {
-                                  ...e,
-                                  status: e.status === "Draft" ? "Published" : e.status === "Published" ? "Closed" : "Draft",
-                                }
-                              : e
-                          )
-                        );
-                        NotificationService.notify("Exam status updated.", "success");
+                        const updatedExam = {
+                          ...exam,
+                          status: exam.status === "Draft" ? "Published" : exam.status === "Published" ? "Closed" : "Draft",
+                        };
+                        onUpdateExam?.(updatedExam);
                       }}
                     >
                       Change Status
@@ -144,17 +135,11 @@ function TeacherDashboard({ exams, setExams, onCreateExam, onEditExam, onViewAns
                     <button
                       className="btn btn-info btn-sm"
                       onClick={() => {
-                        updateExams((current) =>
-                          current.map((e) =>
-                            e.id === exam.id
-                              ? {
-                                  ...e,
-                                  examCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
-                                }
-                              : e
-                          )
-                        );
-                        NotificationService.notify("Exam access code regenerated.", "success");
+                        const updatedExam = {
+                          ...exam,
+                          examCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
+                        };
+                        onUpdateExam?.(updatedExam);
                       }}
                     >
                       Generate Code

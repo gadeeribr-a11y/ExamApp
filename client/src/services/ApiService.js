@@ -34,6 +34,24 @@ async function request(url, options = {}) {
 }
 
 const ApiService = {
+  async login(email, password) {
+    return request(`${API_BASE_URL}/auth/login`, {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+  },
+
+  async register(email, password, role) {
+    return request(`${API_BASE_URL}/auth/register`, {
+      method: "POST",
+      body: JSON.stringify({ email, password, role }),
+    });
+  },
+
+  async getMe() {
+    return request(`${API_BASE_URL}/auth/me`);
+  },
+
   async getExams() {
     return request(API_URL);
   },

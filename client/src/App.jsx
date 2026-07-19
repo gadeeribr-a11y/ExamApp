@@ -3,7 +3,6 @@ import ApiService from "./services/ApiService";
 import MockDBService from "./services/MockDBService";
 import NotificationService from "./services/NotificationService";
 import RegisterPage from "./pages/RegisterPage";
-import RoleSelectionPage from "./pages/RoleSelectionPage";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import CreateExamPage from "./pages/CreateExamPage";
 import EditExamPage from "./pages/EditExamPage";
@@ -22,9 +21,29 @@ function App() {
   const [studentExam, setStudentExam] = useState(null);
   const [exams, setExams] = useState([]);
   const [toasts, setToasts] = useState([]);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [authError, setAuthError] = useState("");
 
   useEffect(() => {
-    loadExams();
+    const existingToken = localStorage.getItem("authToken");
+
+    if (existingToken) {
+      ApiService.getMe()
+        .then((response) => {
+          setLoggedIn(true);
+          setRole(response.user.role);
+          setEmail(response.user.email);
+          return loadExams();
+        })
+        .catch(() => {
+          localStorage.removeItem("authToken");
+          setLoggedIn(false);
+          setRole("");
+        });
+    } else {
+      loadExams();
+    }
   }, []);
 
   useEffect(() => {
@@ -56,6 +75,82 @@ function App() {
     }
   }
 
+  async function handleLogin(event) {
+    event.preventDefault();
+    setAuthError("");
+
+    try {
+      const response = await ApiService.login(email, password);
+      localStorage.setItem("authToken", response.token);
+      setLoggedIn(true);
+      setRole(response.user.role);
+      setEmail(response.user.email);
+      setCurrentPage("dashboard");
+      setPage("login");
+      await loadExams();
+      NotificationService.notify("Signed in successfully.", "success");
+    } catch (error) {
+      setAuthError(error.message || "Login failed.");
+      NotificationService.notify("Login failed.", "warning");
+    }
+  }
+
+  async function handleRegister(payload) {
+    setAuthError("");
+
+    try {
+      const response = await ApiService.register(payload.email, payload.password, payload.role);
+      localStorage.setItem("authToken", response.token);
+      setLoggedIn(true);
+      setRole(response.user.role);
+      setEmail(response.user.email);
+      setCurrentPage("dashboard");
+      setPage("login");
+      await loadExams();
+      NotificationService.notify("Account created successfully.", "success");
+    } catch (error) {
+      setAuthError(error.message || "Registration failed.");
+      NotificationService.notify("Registration failed.", "warning");
+      throw error;
+    }
+  }
+
+  async function handleCreateExam(exam) {
+    try {
+      const created = await ApiService.createExam(exam);
+      setExams((current) => [...current, created]);
+      NotificationService.notify("New exam created.", "success");
+      setCurrentPage("dashboard");
+    } catch (error) {
+      NotificationService.notify("Unable to create exam right now.", "warning");
+      console.error(error);
+    }
+  }
+
+  async function handleUpdateExam(updatedExam) {
+    try {
+      const savedExam = await ApiService.updateExam(updatedExam.id, updatedExam);
+      setExams((current) => current.map((exam) => (exam.id === savedExam.id ? savedExam : exam)));
+      setSelectedExam(savedExam);
+      NotificationService.notify("Exam updated successfully.", "success");
+      setCurrentPage("dashboard");
+    } catch (error) {
+      NotificationService.notify("Unable to update the exam.", "warning");
+      console.error(error);
+    }
+  }
+
+  async function handleDeleteExam(examId) {
+    try {
+      await ApiService.deleteExam(examId);
+      setExams((current) => current.filter((exam) => exam.id !== examId));
+      NotificationService.notify("Exam deleted.", "success");
+    } catch (error) {
+      NotificationService.notify("Unable to delete the exam.", "warning");
+      console.error(error);
+    }
+  }
+
   const renderPage = () => {
     if (currentPage === "answers") {
       return (
@@ -63,9 +158,8 @@ function App() {
           exam={selectedExam}
           onBack={() => setCurrentPage("dashboard")}
           onSaveGrade={(updatedExam) => {
-            const updated = exams.map((e) => (e.id === updatedExam.id ? updatedExam : e));
+            const updated = exams.map((exam) => (exam.id === updatedExam.id ? updatedExam : exam));
             setExams(updated);
-            MockDBService.saveExams(updated);
             NotificationService.notify("Grade saved successfully.", "success");
             setCurrentPage("dashboard");
           }}
@@ -74,22 +168,89 @@ function App() {
     }
 
     if (page === "register") {
-      return <RegisterPage goToLogin={() => setPage("login")} />;
+      return <RegisterPage goToLogin={() => setPage("login")} onRegister={handleRegister} />;
     }
 
-    if (!role) {
-      return <RoleSelectionPage onSelectRole={setRole} />;
+    if (!loggedIn) {
+      return (
+        <div className="bg-dark min-vh-100 d-flex align-items-center justify-content-center">
+          <main className="login-page">
+            <section className="login-shell" aria-label="Login form">
+              <div className="login-panel">
+                <p className="text-uppercase text-primary fw-bold small mb-2">ExamApp</p>
+                <h1 className="h3 fw-bold mb-1">Sign in</h1>
+                <p className="text-secondary mb-4">Access your exam dashboard.</p>
+
+                <form onSubmit={handleLogin}>
+                  <div className="mb-3">
+                    <label htmlFor="email" className="form-label fw-semibold">
+                      Email address
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      className="form-control form-control-lg"
+                      placeholder="name@example.com"
+                      autoComplete="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label htmlFor="password" className="form-label fw-semibold">
+                      Password
+                    </label>
+                    <input
+                      id="password"
+                      type="password"
+                      className="form-control form-control-lg"
+                      placeholder="Enter your password"
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                    />
+                  </div>
+
+                  {authError ? <div className="alert alert-danger py-2">{authError}</div> : null}
+
+                  <div className="d-flex align-items-center justify-content-between gap-3 mb-4">
+                    <div className="form-check">
+                      <input id="remember" type="checkbox" className="form-check-input" checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} />
+                      <label htmlFor="remember" className="form-check-label">
+                        Remember me
+                      </label>
+                    </div>
+                    <a href="#forgot-password" className="link-primary text-decoration-none">
+                      Forgot password?
+                    </a>
+                  </div>
+
+                  <button type="submit" className="btn btn-primary btn-lg w-100">
+                    Log in
+                  </button>
+
+                  <div className="text-center mt-3">
+                    <button type="button" className="btn btn-link" onClick={() => setPage("register")}>
+                      Sign Up
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </section>
+          </main>
+        </div>
+      );
     }
 
-    if (loggedIn && role === "student") {
+    if (role === "student") {
       if (studentExam) {
         return (
           <ExamPage
             exam={studentExam}
             onSubmitExam={(updatedExam) => {
-              const updated = exams.map((e) => (e.id === updatedExam.id ? updatedExam : e));
+              const updated = exams.map((exam) => (exam.id === updatedExam.id ? updatedExam : exam));
               setExams(updated);
-              MockDBService.saveExams(updated);
               setStudentExam(null);
               NotificationService.notify("Exam submitted successfully.", "success");
             }}
@@ -101,20 +262,20 @@ function App() {
         <StudentDashboard
           exams={exams.filter((exam) => exam.status === "Published")}
           onJoinExam={(code) => {
-            const exam = exams.find((e) => e.examCode?.toUpperCase() === code.toUpperCase());
+            const exam = exams.find((entry) => entry.examCode?.toUpperCase() === code.toUpperCase());
 
             if (!exam) {
-              alert("Exam not found");
+              NotificationService.notify("Exam not found.", "warning");
               return;
             }
 
             if (exam.status === "Draft") {
-              alert("This exam is still a draft.");
+              NotificationService.notify("This exam is still a draft.", "warning");
               return;
             }
 
             if (exam.status === "Closed") {
-              alert("This exam is closed.");
+              NotificationService.notify("This exam is closed.", "warning");
               return;
             }
 
@@ -122,50 +283,24 @@ function App() {
             NotificationService.notify("Exam opened for you.", "success");
           }}
           onLogout={() => {
+            localStorage.removeItem("authToken");
             setLoggedIn(false);
             setRole("");
             setStudentExam(null);
+            setPage("login");
             NotificationService.notify("You logged out successfully.", "info");
           }}
         />
       );
     }
 
-    if (loggedIn && role === "teacher") {
+    if (role === "teacher") {
       if (currentPage === "create") {
-        return (
-          <CreateExamPage
-            onCancel={() => setCurrentPage("dashboard")}
-            onSave={(exam) => {
-              const newExam = {
-                ...exam,
-                id: Date.now(),
-              };
-              const updated = [...exams, newExam];
-              setExams(updated);
-              MockDBService.saveExams(updated);
-              NotificationService.notify("New exam created.", "success");
-              setCurrentPage("dashboard");
-            }}
-          />
-        );
+        return <CreateExamPage onCancel={() => setCurrentPage("dashboard")} onSave={handleCreateExam} />;
       }
 
       if (currentPage === "edit") {
-        return (
-          <EditExamPage
-            exam={selectedExam}
-            onSave={(updatedExam) => {
-              const updated = exams.map((e) => (e.id === updatedExam.id ? updatedExam : e));
-              setExams(updated);
-              MockDBService.saveExams(updated);
-              setSelectedExam(updatedExam);
-              NotificationService.notify("Exam updated successfully.", "success");
-              setCurrentPage("dashboard");
-            }}
-            onBack={() => setCurrentPage("dashboard")}
-          />
-        );
+        return <EditExamPage exam={selectedExam} onSave={handleUpdateExam} onBack={() => setCurrentPage("dashboard")} />;
       }
 
       return (
@@ -181,81 +316,21 @@ function App() {
             setSelectedExam(exam);
             setCurrentPage("answers");
           }}
+          onDeleteExam={handleDeleteExam}
+          onUpdateExam={handleUpdateExam}
           onLogout={() => {
+            localStorage.removeItem("authToken");
             setLoggedIn(false);
             setRole("");
             setCurrentPage("dashboard");
+            setPage("login");
             NotificationService.notify("You logged out successfully.", "info");
           }}
         />
       );
     }
 
-    return (
-      <div className="bg-dark min-vh-100 d-flex align-items-center justify-content-center">
-        <main className="login-page">
-          <section className="login-shell" aria-label="Login form">
-            <div className="login-panel">
-              <button type="button" className="btn btn-link p-0 mb-3" onClick={() => setRole("")}>
-                ← Back
-              </button>
-              <p className="text-uppercase text-primary fw-bold small mb-2">ExamApp</p>
-              <h1 className="h3 fw-bold mb-1">Sign in</h1>
-              <p className="text-secondary mb-4">Access your exam dashboard.</p>
-
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                }}
-              >
-                <div className="mb-3">
-                  <label htmlFor="email" className="form-label fw-semibold">
-                    Email address
-                  </label>
-                  <input id="email" type="email" className="form-control form-control-lg" placeholder="name@example.com" autoComplete="email" />
-                </div>
-
-                <div className="mb-3">
-                  <label htmlFor="password" className="form-label fw-semibold">
-                    Password
-                  </label>
-                  <input id="password" type="password" className="form-control form-control-lg" placeholder="Enter your password" autoComplete="current-password" />
-                </div>
-
-                <div className="d-flex align-items-center justify-content-between gap-3 mb-4">
-                  <div className="form-check">
-                    <input id="remember" type="checkbox" className="form-check-input" checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} />
-                    <label htmlFor="remember" className="form-check-label">
-                      Remember me
-                    </label>
-                  </div>
-                  <a href="#forgot-password" className="link-primary text-decoration-none">
-                    Forgot password?
-                  </a>
-                </div>
-
-                <button
-                  type="submit"
-                  className="btn btn-primary btn-lg w-100"
-                  onClick={() => {
-                    setLoggedIn(true);
-                    NotificationService.notify("Welcome back!", "success");
-                  }}
-                >
-                  Log in
-                </button>
-
-                <div className="text-center mt-3">
-                  <button type="button" className="btn btn-link" onClick={() => setPage("register")}>
-                    Sign Up
-                  </button>
-                </div>
-              </form>
-            </div>
-          </section>
-        </main>
-      </div>
-    );
+    return null;
   };
 
   return (
