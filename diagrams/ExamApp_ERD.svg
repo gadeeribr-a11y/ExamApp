@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="820" viewBox="0 0 1400 820" role="img" aria-labelledby="title description">
+  <title id="title">ExamApp Entity Relationship Diagram</title>
+  <desc id="description">A logical ERD showing Users, Exams, and Submission JSON objects.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f7f9fc; }
+      .entity { fill: #fff; stroke: #3152ae; stroke-width: 2; }
+      .entity-submission { fill: #f1fbf8; stroke: #0f766e; stroke-width: 2; }
+      .head { fill: #3152ae; }
+      .head-submission { fill: #0f766e; }
+      .title { fill: #fff; font: 700 22px 'Segoe UI', Arial, sans-serif; letter-spacing: .5px; }
+      .field { fill: #1f2937; font: 16px 'Segoe UI', Arial, sans-serif; }
+      .type { fill: #64748b; font: 14px 'Segoe UI', Arial, sans-serif; }
+      .note { fill: #475569; font: 16px 'Segoe UI', Arial, sans-serif; }
+      .label { fill: #1e3a8a; font: 600 15px 'Segoe UI', Arial, sans-serif; }
+      .line { stroke: #5673c7; stroke-width: 3; fill: none; }
+      .line-sub { stroke: #17806c; stroke-width: 3; fill: none; }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 Z" fill="#5673c7"/></marker>
+    <marker id="arrowSub" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 Z" fill="#17806c"/></marker>
+  </defs>
+
+  <rect class="bg" width="1400" height="820"/>
+  <text x="700" y="56" text-anchor="middle" style="fill:#15213a;font:700 30px 'Segoe UI',Arial,sans-serif">ExamApp — Entity Relationship Diagram</text>
+  <text x="700" y="84" text-anchor="middle" class="note">Physical SQLite tables with the logical submission object stored in Exam.submissions JSON</text>
+
+  <!-- Users -->
+  <g transform="translate(75 180)">
+    <rect class="entity" width="365" height="360" rx="12"/>
+    <rect class="head" width="365" height="58" rx="12"/>
+    <rect class="head" y="40" width="365" height="18"/>
+    <text class="title" x="182" y="37" text-anchor="middle">USERS</text>
+    <text class="field" x="24" y="94">🔑 id</text><text class="type" x="250" y="94">INTEGER PK</text>
+    <line x1="18" y1="112" x2="347" y2="112" stroke="#e2e8f0"/>
+    <text class="field" x="24" y="142">name</text><text class="type" x="250" y="142">TEXT</text>
+    <text class="field" x="24" y="184">email</text><text class="type" x="250" y="184">TEXT UNIQUE</text>
+    <text class="field" x="24" y="226">passwordHash</text><text class="type" x="250" y="226">TEXT</text>
+    <text class="field" x="24" y="268">role</text><text class="type" x="250" y="268">TEXT</text>
+    <text class="field" x="24" y="310">createdAt</text><text class="type" x="250" y="310">TEXT</text>
+  </g>
+
+  <!-- Exams -->
+  <g transform="translate(540 130)">
+    <rect class="entity" width="410" height="520" rx="12"/>
+    <rect class="head" width="410" height="58" rx="12"/>
+    <rect class="head" y="40" width="410" height="18"/>
+    <text class="title" x="205" y="37" text-anchor="middle">EXAMS</text>
+    <text class="field" x="24" y="92">🔑 id</text><text class="type" x="274" y="92">INTEGER PK</text>
+    <line x1="18" y1="110" x2="392" y2="110" stroke="#e2e8f0"/>
+    <text class="field" x="24" y="142">title</text><text class="type" x="274" y="142">TEXT</text>
+    <text class="field" x="24" y="180">status</text><text class="type" x="274" y="180">TEXT</text>
+    <text class="field" x="24" y="218">startDate</text><text class="type" x="274" y="218">TEXT</text>
+    <text class="field" x="24" y="256">durationMinutes</text><text class="type" x="274" y="256">INTEGER</text>
+    <text class="field" x="24" y="294">examCode</text><text class="type" x="274" y="294">TEXT</text>
+    <text class="field" x="24" y="332">🔗 ownerId</text><text class="type" x="274" y="332">INTEGER FK</text>
+    <text class="field" x="24" y="370">questions</text><text class="type" x="274" y="370">JSON TEXT</text>
+    <text class="field" x="24" y="408">submissions</text><text class="type" x="274" y="408">JSON TEXT</text>
+    <text class="field" x="24" y="446">grade</text><text class="type" x="274" y="446">TEXT</text>
+  </g>
+
+  <!-- Submission logical object -->
+  <g transform="translate(1050 180)">
+    <rect class="entity-submission" width="290" height="360" rx="12"/>
+    <rect class="head-submission" width="290" height="58" rx="12"/>
+    <rect class="head-submission" y="40" width="290" height="18"/>
+    <text class="title" x="145" y="37" text-anchor="middle">SUBMISSION JSON</text>
+    <text class="field" x="20" y="94">id</text><text class="type" x="180" y="94">INTEGER</text>
+    <line x1="16" y1="112" x2="274" y2="112" stroke="#d1eee8"/>
+    <text class="field" x="20" y="142">studentId</text><text class="type" x="180" y="142">INTEGER</text>
+    <text class="field" x="20" y="184">studentName</text><text class="type" x="180" y="184">TEXT</text>
+    <text class="field" x="20" y="226">answers</text><text class="type" x="180" y="226">JSON</text>
+    <text class="field" x="20" y="268">submittedAt</text><text class="type" x="180" y="268">TEXT</text>
+    <text class="field" x="20" y="310">grade</text><text class="type" x="180" y="310">NUMBER</text>
+  </g>
+
+  <!-- Relationships -->
+  <path class="line" d="M440 330 C485 330, 490 462, 540 462" marker-end="url(#arrow)"/>
+  <text class="label" x="456" y="386">1 teacher creates 0..* exams</text>
+  <path class="line-sub" d="M950 410 C1000 410, 1002 360, 1050 360" marker-end="url(#arrowSub)"/>
+  <text x="968" y="344" style="fill:#0f766e;font:600 15px 'Segoe UI',Arial,sans-serif">1 exam contains 0..* submissions</text>
+  <path class="line-sub" d="M440 480 C690 735, 1120 735, 1195 540" marker-end="url(#arrowSub)"/>
+  <text x="670" y="765" style="fill:#0f766e;font:600 15px 'Segoe UI',Arial,sans-serif">1 student makes 0..* submissions</text>
+
+  <rect x="75" y="690" width="855" height="80" rx="10" fill="#eaf0ff" stroke="#c5d3fa"/>
+  <text x="100" y="723" class="note">Implementation note: USERS and EXAMS are physical SQLite tables. Each submission is an object in EXAMS.submissions,</text>
+  <text x="100" y="748" class="note">therefore SUBMISSION JSON is a logical entity shown to document the real business relationship.</text>
+</svg>

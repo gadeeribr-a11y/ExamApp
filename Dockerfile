@@ -2,8 +2,7 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 COPY client/package.json ./client/package.json
-COPY client/package-lock.json ./client/package-lock.json
-RUN cd client && npm ci
+RUN cd client && npm install
 
 COPY client ./client
 RUN cd client && npm run build

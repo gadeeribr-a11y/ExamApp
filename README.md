@@ -13,6 +13,9 @@ ExamApp is a professional exam management platform with a teacher dashboard, stu
 
 ## Engineering evidence
 
+- [Complete project documentation](PROJECT_DOCUMENTATION.md)
+- [מסמך הגשה מלא — עברית](SUBMISSION_DOCUMENTATION_HE.md)
+- [Entity Relationship Diagram](ERD.md)
 - [Architecture and security design](ARCHITECTURE.md)
 - [Git workflow and contribution guide](CONTRIBUTING.md)
 - GitHub Actions CI builds the client and runs server checks on every push and pull request.
