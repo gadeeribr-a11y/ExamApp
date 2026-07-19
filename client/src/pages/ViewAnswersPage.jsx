@@ -1,13 +1,15 @@
-import { useState } from "react";
+import React, { useState } from "react";
 
 function ViewAnswersPage({
   exam,
   onBack,
   onSaveGrade,
 }) {
-  const [grade, setGrade] = useState(
-    exam?.grade || ""
-  );
+  const [submissions, setSubmissions] = useState(exam?.submissions || []);
+
+  const saveGrades = () => {
+    onSaveGrade({ ...exam, submissions });
+  };
 
   return (
     <div className="container mt-4">
@@ -36,6 +38,7 @@ function ViewAnswersPage({
           <div key={submission.id} className="card mb-4">
             <div className="card-body">
               <h5>Submission #{index + 1}</h5>
+              <p className="text-muted mb-2">{submission.studentEmail || "Student"} · {new Date(submission.submittedAt).toLocaleString()}</p>
 
               {Object.entries(submission.submittedAnswers).map(
                 ([questionId, answer]) => (
@@ -57,10 +60,10 @@ function ViewAnswersPage({
                 type="number"
                 className="form-control mt-3"
                 placeholder="Grade"
-                defaultValue={submission.grade ?? ""}
-                onBlur={(e) => {
-                  submission.grade = e.target.value;
-                }}
+                value={submission.grade ?? ""}
+                onChange={(e) => setSubmissions((current) => current.map((item) => (
+                  item.id === submission.id ? { ...item, grade: e.target.value } : item
+                )))}
               />
             </div>
           </div>
@@ -71,26 +74,9 @@ function ViewAnswersPage({
         </div>
       )}
 
-      <hr />
-
-      <h4>Grade Student</h4>
-
-      <input
-        type="number"
-        min="0"
-        max="100"
-        className="form-control mb-3"
-        value={grade}
-        onChange={(e) =>
-          setGrade(e.target.value)
-        }
-      />
-
       <button
         className="btn btn-success me-2"
-        onClick={() =>
-          onSaveGrade(grade)
-        }
+        onClick={saveGrades}
       >
         Save Grade
       </button>

@@ -1,3 +1,5 @@
+import React from "react";
+
 function ToastContainer({ toasts }) {
   if (!toasts.length) {
     return null;

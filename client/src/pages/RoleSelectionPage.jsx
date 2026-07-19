@@ -1,3 +1,5 @@
+import React from "react";
+
 function RoleSelectionPage({ onSelectRole }) {
   return (
     <div className="bg-dark min-vh-100 d-flex justify-content-center align-items-center">

@@ -1,3 +1,4 @@
+import React from "react";
 import NotificationService from "../services/NotificationService";
 
 function TeacherDashboard({ exams, setExams, onCreateExam, onEditExam, onViewAnswers, onLogout, onDeleteExam, onUpdateExam }) {

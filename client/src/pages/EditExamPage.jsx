@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { clearDraft, getDraft, saveDraft } from "../services/DraftService";
 import NotificationService from "../services/NotificationService";
 
@@ -12,6 +12,7 @@ function EditExamPage({ exam, onSave, onBack }) {
   const [answerD, setAnswerD] = useState("");
   const [correctAnswer, setCorrectAnswer] = useState("A");
   const [editingQuestionId, setEditingQuestionId] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const draftKey = `edit-exam-${exam?.id ?? "new"}`;
 
@@ -88,10 +89,17 @@ function EditExamPage({ exam, onSave, onBack }) {
     NotificationService.notify("Question saved to the draft.", "success");
   };
 
-  const handleSaveExam = () => {
-    clearDraft(draftKey);
-    onSave({ ...exam, questions });
-    NotificationService.notify("Exam questions saved successfully.", "success");
+  const handleSaveExam = async () => {
+    setIsSaving(true);
+
+    try {
+      const saved = await onSave({ ...exam, questions });
+      if (saved) {
+        clearDraft(draftKey);
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -197,8 +205,8 @@ function EditExamPage({ exam, onSave, onBack }) {
         ))}
       </ul>
 
-      <button className="btn btn-success me-2" onClick={handleSaveExam}>
-        Save Questions
+      <button className="btn btn-success me-2" onClick={handleSaveExam} disabled={isSaving}>
+        {isSaving ? "Saving..." : "Save Questions"}
       </button>
       <button
         className="btn btn-secondary"

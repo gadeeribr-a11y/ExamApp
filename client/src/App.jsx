@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import ApiService from "./services/ApiService";
-import MockDBService from "./services/MockDBService";
 import NotificationService from "./services/NotificationService";
 import RegisterPage from "./pages/RegisterPage";
 import TeacherDashboard from "./pages/TeacherDashboard";
@@ -24,6 +23,7 @@ function App() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState("");
+  const safeExams = Array.isArray(exams) ? exams : [];
 
   useEffect(() => {
     const existingToken = localStorage.getItem("authToken");
@@ -67,11 +67,11 @@ function App() {
   async function loadExams() {
     try {
       const data = await ApiService.getExams();
-      setExams(data);
+      setExams(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to load exams from API", error);
-      setExams(MockDBService.getExams());
-      NotificationService.notify("Loaded the latest local backup of exams.", "warning");
+      setExams([]);
+      NotificationService.notify("Unable to load exams right now.", "warning");
     }
   }
 
@@ -134,9 +134,11 @@ function App() {
       setSelectedExam(savedExam);
       NotificationService.notify("Exam updated successfully.", "success");
       setCurrentPage("dashboard");
+      return true;
     } catch (error) {
       NotificationService.notify("Unable to update the exam.", "warning");
       console.error(error);
+      return false;
     }
   }
 
@@ -158,10 +160,7 @@ function App() {
           exam={selectedExam}
           onBack={() => setCurrentPage("dashboard")}
           onSaveGrade={(updatedExam) => {
-            const updated = exams.map((exam) => (exam.id === updatedExam.id ? updatedExam : exam));
-            setExams(updated);
-            NotificationService.notify("Grade saved successfully.", "success");
-            setCurrentPage("dashboard");
+            handleUpdateExam(updatedExam);
           }}
         />
       );
@@ -248,9 +247,9 @@ function App() {
         return (
           <ExamPage
             exam={studentExam}
-            onSubmitExam={(updatedExam) => {
-              const updated = exams.map((exam) => (exam.id === updatedExam.id ? updatedExam : exam));
-              setExams(updated);
+            onBack={() => setStudentExam(null)}
+            onSubmitExam={async (answers) => {
+              await ApiService.submitExam(studentExam.id, answers);
               setStudentExam(null);
               NotificationService.notify("Exam submitted successfully.", "success");
             }}
@@ -260,9 +259,9 @@ function App() {
 
       return (
         <StudentDashboard
-          exams={exams.filter((exam) => exam.status === "Published")}
+          exams={safeExams.filter((exam) => exam.status === "Published")}
           onJoinExam={(code) => {
-            const exam = exams.find((entry) => entry.examCode?.toUpperCase() === code.toUpperCase());
+            const exam = safeExams.find((entry) => entry.examCode?.toUpperCase() === code.toUpperCase());
 
             if (!exam) {
               NotificationService.notify("Exam not found.", "warning");
@@ -305,7 +304,7 @@ function App() {
 
       return (
         <TeacherDashboard
-          exams={exams}
+          exams={safeExams}
           setExams={setExams}
           onCreateExam={() => setCurrentPage("create")}
           onEditExam={(exam) => {

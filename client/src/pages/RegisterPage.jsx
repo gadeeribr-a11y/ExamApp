@@ -1,24 +1,34 @@
-import { useState } from "react";
+import React, { useState } from "react";
 
 function RegisterPage({ goToLogin, onRegister }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("student");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
 
-    if (!email.trim() || !password.trim()) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !password.trim()) {
       setError("Please enter an email and password.");
       return;
     }
 
+    if (password.length < 8) {
+      setError("Password must contain at least 8 characters.");
+      return;
+    }
+
     try {
-      await onRegister?.({ email, password, role });
+      setIsSubmitting(true);
+      await onRegister?.({ email: normalizedEmail, password, role });
     } catch (registerError) {
       setError(registerError.message || "Registration failed.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -34,6 +44,7 @@ function RegisterPage({ goToLogin, onRegister }) {
             placeholder="Email"
             className="form-control mb-3"
             value={email}
+            required
             onChange={(event) => setEmail(event.target.value)}
           />
 
@@ -42,6 +53,8 @@ function RegisterPage({ goToLogin, onRegister }) {
             placeholder="Password"
             className="form-control mb-3"
             value={password}
+            minLength="8"
+            required
             onChange={(event) => setPassword(event.target.value)}
           />
 
@@ -52,13 +65,13 @@ function RegisterPage({ goToLogin, onRegister }) {
 
           {error ? <div className="alert alert-danger py-2">{error}</div> : null}
 
-          <button className="btn btn-primary w-100" type="submit">
-            Create Account
+          <button className="btn btn-primary w-100" type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Creating account..." : "Create Account"}
           </button>
         </form>
 
         <div className="text-center mt-3">
-          <button className="btn btn-link" onClick={goToLogin}>
+          <button type="button" className="btn btn-link" onClick={goToLogin}>
             Back to Login
           </button>
         </div>

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import NotificationService from "../services/NotificationService";
 
 function ExamPage({
   exam,
@@ -6,6 +7,7 @@ function ExamPage({
   onSubmitExam,
 }) {
   const [answers, setAnswers] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   return (
     <div className="container mt-4">
@@ -66,29 +68,25 @@ function ExamPage({
 
         <button
         className="btn btn-success me-2"
-        onClick={() => {
+        disabled={isSubmitting}
+        onClick={async () => {
             const confirmed = window.confirm(
             "Are you sure you want to finish the exam?"
             );
 
             if (confirmed) {
-            onSubmitExam({
-            ...exam,
-            submissions: [
-              ...(exam.submissions || []),
-              {
-                id: Date.now(),
-                submittedAnswers: answers,
-                submittedAt: new Date().toLocaleString(),
-                grade: null,
-              },
-            ],
-          });
-            onBack();
+            try {
+              setIsSubmitting(true);
+              await onSubmitExam(answers);
+            } catch (error) {
+              NotificationService.notify("Unable to submit the exam. Please try again.", "warning");
+            } finally {
+              setIsSubmitting(false);
+            }
             }
         }}
         >
-        Finish Exam
+        {isSubmitting ? "Submitting..." : "Finish Exam"}
         </button>
       <button
         className="btn btn-secondary"

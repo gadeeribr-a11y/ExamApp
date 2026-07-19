@@ -11,6 +11,12 @@ ExamApp is a professional exam management platform with a teacher dashboard, stu
 - Docker support for containerized deployment
 - Node/Express API serving the built frontend from a single process
 
+## Engineering evidence
+
+- [Architecture and security design](ARCHITECTURE.md)
+- [Git workflow and contribution guide](CONTRIBUTING.md)
+- GitHub Actions CI builds the client and runs server checks on every push and pull request.
+
 ## Local development
 1. Install client dependencies:
    - `cd client`
@@ -28,3 +34,4 @@ The app will be available at `http://127.0.0.1:5000`.
 - Render configuration is available in [render.yaml](render.yaml).
 - Docker support is available through [Dockerfile](Dockerfile).
 - Set a secure `JWT_SECRET` value in production environments.
+- Copy `.env.example` to `.env` locally and set a unique `JWT_SECRET` before deployment.

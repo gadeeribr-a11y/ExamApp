@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+const developmentApiUrl = `http://${window.location.hostname || "127.0.0.1"}:5000/api`;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? developmentApiUrl : "/api");
 const API_URL = `${API_BASE_URL}/exams`;
 
 function getAuthHeaders() {
@@ -18,19 +19,38 @@ async function request(url, options = {}) {
 
   if (!response.ok) {
     const details = await response.text();
-    throw new Error(details || `Request failed with status ${response.status}`);
+    try {
+      const parsed = JSON.parse(details);
+      throw new Error(parsed.message || `Request failed with status ${response.status}`);
+    } catch (error) {
+      if (error.message !== details) {
+        throw error;
+      }
+      throw new Error(details || `Request failed with status ${response.status}`);
+    }
   }
 
   if (response.status === 204) {
     return null;
   }
 
-  const contentType = response.headers.get("content-type") || "";
-  if (contentType.includes("application/json")) {
-    return response.json();
+  // A successful response can legitimately have no body. Read it once before
+  // parsing so an empty JSON response does not surface as a SyntaxError.
+  const body = await response.text();
+  if (!body) {
+    return null;
   }
 
-  return response.text();
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    try {
+      return JSON.parse(body);
+    } catch {
+      throw new Error("The server returned an invalid JSON response.");
+    }
+  }
+
+  return body;
 }
 
 const ApiService = {
@@ -73,6 +93,13 @@ const ApiService = {
   async deleteExam(id) {
     return request(`${API_URL}/${id}`, {
       method: "DELETE",
+    });
+  },
+
+  async submitExam(id, answers) {
+    return request(`${API_URL}/${id}/submissions`, {
+      method: "POST",
+      body: JSON.stringify({ answers }),
     });
   },
 };

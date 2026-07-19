@@ -1,3 +1,5 @@
+import React from "react";
+
 function LoginPage() {
   return (
     <div className="container mt-5">

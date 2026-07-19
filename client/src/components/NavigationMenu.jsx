@@ -1,3 +1,5 @@
+import React from "react";
+
 function NavigationMenu({ onLogout }) {
   return (
     <div className="mb-3">
