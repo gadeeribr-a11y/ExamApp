@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "title": "React Basics",
+    "status": "Published",
+    "examCode": "ABC123",
+    "questions": [],
+    "submitted": false,
+    "submittedAnswers": [],
+    "grade": null
+  },
+  {
+    "id": 2,
+    "title": "Java",
+    "status": "Draft",
+    "examCode": "JAVA22",
+    "questions": [],
+    "submitted": false,
+    "submittedAnswers": [],
+    "grade": null
+  }
+]
