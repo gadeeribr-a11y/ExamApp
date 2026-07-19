@@ -3,6 +3,7 @@ import React, { useState } from "react";
 function StudentDashboard({
   exams,
   onJoinExam,
+  onViewResults,
   onLogout,
 }) {
   const [code, setCode] = useState("");
@@ -33,36 +34,10 @@ function StudentDashboard({
       >
         Join Exam
       </button>
+      <button className="btn btn-outline-primary ms-2" onClick={onViewResults}>
+        My Results
+      </button>
       <hr className="my-4" />
-
-<h3>My Grades</h3>
-
-{exams
-  .filter(
-    (exam) =>
-      exam.grade !== null &&
-      exam.grade !== undefined
-  )
-  .map((exam) => (
-    <div
-      key={exam.id}
-      className="card mb-3"
-    >
-      <div className="card-body">
-        <h5>{exam.title}</h5>
-
-        <p>
-          <strong>Code:</strong>{" "}
-          {exam.examCode}
-        </p>
-
-        <p>
-          <strong>Grade:</strong>{" "}
-          {exam.grade}
-        </p>
-      </div>
-    </div>
-  ))}
     </div>
   );
 }

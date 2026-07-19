@@ -2,6 +2,7 @@ import React, { useState } from "react";
 
 function RegisterPage({ goToLogin, onRegister }) {
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("student");
   const [error, setError] = useState("");
@@ -12,8 +13,8 @@ function RegisterPage({ goToLogin, onRegister }) {
     setError("");
 
     const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail || !password.trim()) {
-      setError("Please enter an email and password.");
+    if (!name.trim() || !normalizedEmail || !password.trim()) {
+      setError("Please enter your name, email, and password.");
       return;
     }
 
@@ -24,7 +25,7 @@ function RegisterPage({ goToLogin, onRegister }) {
 
     try {
       setIsSubmitting(true);
-      await onRegister?.({ email: normalizedEmail, password, role });
+      await onRegister?.({ name: name.trim(), email: normalizedEmail, password, role });
     } catch (registerError) {
       setError(registerError.message || "Registration failed.");
     } finally {
@@ -39,6 +40,15 @@ function RegisterPage({ goToLogin, onRegister }) {
         <h1 className="h3 fw-bold mb-3">Register</h1>
 
         <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            placeholder="Full name"
+            className="form-control mb-3"
+            value={name}
+            required
+            onChange={(event) => setName(event.target.value)}
+          />
+
           <input
             type="email"
             placeholder="Email"

@@ -1,12 +1,12 @@
 import React from "react";
 import NotificationService from "../services/NotificationService";
 
-function TeacherDashboard({ exams, setExams, onCreateExam, onEditExam, onViewAnswers, onLogout, onDeleteExam, onUpdateExam }) {
+function TeacherDashboard({ exams, setExams, onCreateExam, onEditExam, onViewAnswers, onViewSubmissions, onLogout, onDeleteExam, onUpdateExam }) {
   const totalExams = exams.length;
   const publishedCount = exams.filter((exam) => exam.status === "Published").length;
   const draftCount = exams.filter((exam) => exam.status === "Draft").length;
   const closedCount = exams.filter((exam) => exam.status === "Closed").length;
-  const submittedCount = exams.filter((exam) => exam.submitted).length;
+  const submittedCount = exams.reduce((count, exam) => count + (exam.submissions?.length || 0), 0);
   const averageGrade = exams.filter((exam) => exam.grade !== null && exam.grade !== undefined && exam.grade !== "").length
     ? (
         exams.reduce((sum, exam) => sum + Number(exam.grade || 0), 0) /
@@ -57,10 +57,10 @@ function TeacherDashboard({ exams, setExams, onCreateExam, onEditExam, onViewAns
           </div>
         </div>
         <div className="col-md-3 col-sm-6">
-          <div className="stats-card">
+          <button type="button" className="stats-card border-0 w-100 text-start" onClick={onViewSubmissions}>
             <span>Submitted</span>
             <strong>{submittedCount}</strong>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -96,7 +96,7 @@ function TeacherDashboard({ exams, setExams, onCreateExam, onEditExam, onViewAns
                 <td>
                   <code>{exam.examCode}</code>
                 </td>
-                <td>{exam.submitted ? "Submitted" : "Pending"}</td>
+                <td>{exam.submissions?.length || 0}</td>
                 <td>{exam.grade ?? "—"}</td>
                 <td>
                   <div className="d-flex flex-wrap gap-2">

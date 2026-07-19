@@ -61,10 +61,10 @@ const ApiService = {
     });
   },
 
-  async register(email, password, role) {
+  async register(email, password, role, name) {
     return request(`${API_BASE_URL}/auth/register`, {
       method: "POST",
-      body: JSON.stringify({ email, password, role }),
+      body: JSON.stringify({ email, password, role, name }),
     });
   },
 
@@ -74,6 +74,10 @@ const ApiService = {
 
   async getExams() {
     return request(API_URL);
+  },
+
+  async getMySubmissions() {
+    return request(`${API_BASE_URL}/student/submissions`);
   },
 
   async createExam(exam) {

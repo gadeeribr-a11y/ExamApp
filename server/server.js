@@ -64,6 +64,7 @@ function mapExamForStudent(row) {
 function mapUserRow(row) {
   return {
     id: row.id,
+    name: row.name || row.email,
     email: row.email,
     role: row.role,
     createdAt: row.createdAt,
@@ -150,11 +151,13 @@ function initializeDatabase() {
           CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY,
             email TEXT UNIQUE NOT NULL,
-            passwordHash TEXT NOT NULL,
-            role TEXT NOT NULL DEFAULT 'student',
+          passwordHash TEXT NOT NULL,
+          name TEXT NOT NULL DEFAULT '',
+          role TEXT NOT NULL DEFAULT 'student',
             createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
           )
         `);
+        db.run("ALTER TABLE users ADD COLUMN name TEXT NOT NULL DEFAULT ''", () => {});
 
         db.all("PRAGMA table_info(exams)", (pragmaError, columns) => {
           if (pragmaError) {
@@ -270,13 +273,13 @@ app.get("/api/health", (req, res) => {
 app.post("/api/auth/register", async (req, res) => {
   try {
     const db = await dbPromise;
-    const { email, password, role } = req.body || {};
+    const { email, password, role, name } = req.body || {};
 
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password are required" });
     }
 
-    const validationError = validateRegistration(email, password);
+    const validationError = validateRegistration(email, password, name);
     if (validationError) {
       return res.status(400).json({ message: validationError });
     }
@@ -291,8 +294,8 @@ app.post("/api/auth/register", async (req, res) => {
     const passwordHash = bcrypt.hashSync(password, 10);
     const result = await runStatement(
       db,
-      "INSERT INTO users (email, passwordHash, role) VALUES (?, ?, ?)",
-      [email.toLowerCase(), passwordHash, normalizedRole]
+      "INSERT INTO users (email, passwordHash, name, role) VALUES (?, ?, ?, ?)",
+      [email.toLowerCase(), passwordHash, name?.trim() || email.toLowerCase(), normalizedRole]
     );
 
     const userRows = await runQuery(db, "SELECT * FROM users WHERE id = ?", [result.lastID]);
@@ -348,10 +351,45 @@ app.get("/api/exams", authenticateToken, async (req, res) => {
       ? "SELECT * FROM exams WHERE ownerId = ? ORDER BY id"
       : "SELECT * FROM exams WHERE status = 'Published' ORDER BY id";
     const rows = await runQuery(db, query, isTeacher ? [req.user.id] : []);
-    res.json(rows.map(req.user.role === "teacher" ? mapExamRow : mapExamForStudent));
+    if (isTeacher) {
+      return res.json(rows.map(mapExamRow));
+    }
+
+    const availableExams = rows
+      .map(mapExamRow)
+      .filter((exam) => !exam.submissions.some((submission) => submission.studentId === req.user.id))
+      .map((exam) => mapExamForStudent(exam));
+    res.json(availableExams);
   } catch (error) {
     console.error("Failed to fetch exams:", error.message);
     res.status(500).json({ message: "Failed to fetch exams" });
+  }
+});
+
+app.get("/api/student/submissions", authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== "student") {
+      return res.status(403).json({ message: "Only students can view student results" });
+    }
+
+    const db = await dbPromise;
+    const rows = await runQuery(db, "SELECT * FROM exams ORDER BY id");
+    const results = rows.flatMap((row) => {
+      const exam = mapExamRow(row);
+      return exam.submissions
+        .filter((submission) => submission.studentId === req.user.id)
+        .map((submission) => ({
+          examId: exam.id,
+          examTitle: exam.title,
+          submittedAt: submission.submittedAt,
+          grade: submission.grade ?? null,
+        }));
+    });
+
+    res.json(results);
+  } catch (error) {
+    console.error("Failed to fetch student results:", error.message);
+    res.status(500).json({ message: "Failed to fetch student results" });
   }
 });
 
@@ -492,6 +530,7 @@ app.post("/api/exams/:id/submissions", authenticateToken, async (req, res) => {
       id: Date.now(),
       studentId: req.user.id,
       studentEmail: req.user.email,
+      studentName: req.user.name || req.user.email,
       submittedAnswers: answers,
       submittedAt: new Date().toISOString(),
       grade: null,

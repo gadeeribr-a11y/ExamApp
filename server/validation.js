@@ -1,13 +1,17 @@
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EXAM_STATUSES = new Set(["Draft", "Published", "Closed"]);
 
-function validateRegistration(email, password) {
+function validateRegistration(email, password, name) {
   if (typeof email !== "string" || !EMAIL_PATTERN.test(email.trim())) {
     return "Please provide a valid email address";
   }
 
   if (typeof password !== "string" || password.length < 8) {
     return "Password must contain at least 8 characters";
+  }
+
+  if (name !== undefined && (typeof name !== "string" || !name.trim() || name.trim().length > 80)) {
+    return "Name must contain between 1 and 80 characters";
   }
 
   return null;

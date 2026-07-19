@@ -6,8 +6,10 @@ import TeacherDashboard from "./pages/TeacherDashboard";
 import CreateExamPage from "./pages/CreateExamPage";
 import EditExamPage from "./pages/EditExamPage";
 import StudentDashboard from "./pages/StudentDashboard";
+import StudentResultsPage from "./pages/StudentResultsPage";
 import ExamPage from "./pages/ExamPage";
 import ViewAnswersPage from "./pages/ViewAnswersPage";
+import SubmissionListPage from "./pages/SubmissionListPage";
 import ToastContainer from "./components/ToastContainer";
 
 function App() {
@@ -18,6 +20,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState("dashboard");
   const [selectedExam, setSelectedExam] = useState(null);
   const [studentExam, setStudentExam] = useState(null);
+  const [studentResults, setStudentResults] = useState([]);
   const [exams, setExams] = useState([]);
   const [toasts, setToasts] = useState([]);
   const [email, setEmail] = useState("");
@@ -41,8 +44,6 @@ function App() {
           setLoggedIn(false);
           setRole("");
         });
-    } else {
-      loadExams();
     }
   }, []);
 
@@ -99,7 +100,7 @@ function App() {
     setAuthError("");
 
     try {
-      const response = await ApiService.register(payload.email, payload.password, payload.role);
+      const response = await ApiService.register(payload.email, payload.password, payload.role, payload.name);
       localStorage.setItem("authToken", response.token);
       setLoggedIn(true);
       setRole(response.user.role);
@@ -154,6 +155,13 @@ function App() {
   }
 
   const renderPage = () => {
+    if (currentPage === "submissions") {
+      return <SubmissionListPage exams={safeExams} onBack={() => setCurrentPage("dashboard")} onViewAnswers={(exam) => {
+        setSelectedExam(exam);
+        setCurrentPage("answers");
+      }} />;
+    }
+
     if (currentPage === "answers") {
       return (
         <ViewAnswersPage
@@ -243,6 +251,10 @@ function App() {
     }
 
     if (role === "student") {
+      if (currentPage === "student-results") {
+        return <StudentResultsPage results={studentResults} onBack={() => setCurrentPage("dashboard")} />;
+      }
+
       if (studentExam) {
         return (
           <ExamPage
@@ -251,6 +263,7 @@ function App() {
             onSubmitExam={async (answers) => {
               await ApiService.submitExam(studentExam.id, answers);
               setStudentExam(null);
+              await loadExams();
               NotificationService.notify("Exam submitted successfully.", "success");
             }}
           />
@@ -260,6 +273,16 @@ function App() {
       return (
         <StudentDashboard
           exams={safeExams.filter((exam) => exam.status === "Published")}
+          onViewResults={async () => {
+            try {
+              const results = await ApiService.getMySubmissions();
+              setStudentResults(Array.isArray(results) ? results : []);
+              setCurrentPage("student-results");
+            } catch (error) {
+              NotificationService.notify("Unable to load your results right now.", "warning");
+              console.error(error);
+            }
+          }}
           onJoinExam={(code) => {
             const exam = safeExams.find((entry) => entry.examCode?.toUpperCase() === code.toUpperCase());
 
@@ -315,6 +338,7 @@ function App() {
             setSelectedExam(exam);
             setCurrentPage("answers");
           }}
+          onViewSubmissions={() => setCurrentPage("submissions")}
           onDeleteExam={handleDeleteExam}
           onUpdateExam={handleUpdateExam}
           onLogout={() => {

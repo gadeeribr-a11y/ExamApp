@@ -33,8 +33,8 @@ function ViewAnswersPage({
 
       <h4 className="mb-3">Student Submissions</h4>
 
-      {exam?.submissions?.length > 0 ? (
-        exam.submissions.map((submission, index) => (
+      {submissions.length > 0 ? (
+        submissions.map((submission, index) => (
           <div key={submission.id} className="card mb-4">
             <div className="card-body">
               <h5>Submission #{index + 1}</h5>
@@ -60,6 +60,8 @@ function ViewAnswersPage({
                 type="number"
                 className="form-control mt-3"
                 placeholder="Grade"
+                min="0"
+                max="100"
                 value={submission.grade ?? ""}
                 onChange={(e) => setSubmissions((current) => current.map((item) => (
                   item.id === submission.id ? { ...item, grade: e.target.value } : item
@@ -78,7 +80,7 @@ function ViewAnswersPage({
         className="btn btn-success me-2"
         onClick={saveGrades}
       >
-        Save Grade
+        Save Grades
       </button>
 
       <button
